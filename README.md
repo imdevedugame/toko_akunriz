@@ -307,7 +307,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 For support and questions:
 - Create an issue in the repository
-- Contact: support@premiumstore.com
+- Contact: support@rivazstore.com
 - Documentation: [Wiki](link-to-wiki)
 
 ## 🔄 Changelog

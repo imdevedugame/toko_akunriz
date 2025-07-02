@@ -61,7 +61,7 @@ export default function ContactPage() {
     {
       icon: Mail,
       title: "Email Support",
-      value: "support@premiumstore.com",
+      value: "rivaz.store15@gmail.com",
       description: "Kirim email untuk pertanyaan umum",
       color: "bg-blue-500",
       bgColor: "bg-blue-50",

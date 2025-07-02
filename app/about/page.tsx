@@ -69,7 +69,7 @@ export default function AboutPage() {
     {
       year: "2020",
       title: "Berdiri",
-      description: "Premium Store didirikan dengan visi menyediakan akun premium berkualitas tinggi.",
+      description: "Rivazstore didirikan dengan visi menyediakan akun premium berkualitas tinggi.",
       icon: Building,
       color: "from-blue-500 to-blue-600",
     },
@@ -164,7 +164,7 @@ export default function AboutPage() {
             <Building className="h-10 w-10 text-white" />
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent leading-tight">
-            Tentang Premium Store
+            Tentang Rivazstore
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-8">
             Kami adalah platform terpercaya yang menyediakan akun premium dan layanan IndoSMM berkualitas tinggi dengan
@@ -350,7 +350,7 @@ export default function AboutPage() {
               Perjalanan Kami
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Melihat kembali perjalanan dan milestone penting dalam pengembangan Premium Store
+              Melihat kembali perjalanan dan milestone penting dalam pengembangan Rivazstore
             </p>
           </div>
           <div className="space-y-6 sm:space-y-8">

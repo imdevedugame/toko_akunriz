@@ -3,14 +3,18 @@ import { Crown, Mail, Phone, MapPin } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer className="bg-blue-900 text-white">
       <div className="container mx-auto px-4 py-12">
         <div className="grid md:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <Crown className="h-8 w-8 text-blue-400" />
-              <span className="text-xl font-bold">Premium Store</span>
+              <img
+              src="/Logo.png"
+              alt="PremiumStore Logo"
+              className="w-20 h-20 mb-5 object-cover"
+              />
+              <span className="text-xl font-bold">Rivazstore</span>
             </div>
             <p className="text-gray-400 mb-4">
               Toko online terpercaya untuk akun premium dan layanan IndoSMM dengan sistem pembayaran yang aman.
@@ -77,22 +81,24 @@ export function Footer() {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-blue-400" />
-                <span className="text-gray-400">support@premiumstore.com</span>
+                <span className="text-gray-400">rivaz.store15@gmail.com
+</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-blue-400" />
-                <span className="text-gray-400">+62 812-3456-7890</span>
+                <span className="text-gray-400">+62 96-3037-5723
+</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="h-5 w-5 text-blue-400" />
-                <span className="text-gray-400">Jakarta, Indonesia</span>
+                <span className="text-gray-400">Semarang, Indonesia</span>
               </div>
             </div>
           </div>
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-          <p className="text-gray-400">© 2024 Premium Store. All rights reserved.</p>
+          <p className="text-gray-400">© 2024 Rivazstore. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -197,7 +197,9 @@ export default function PaymentFailedPage() {
         <div className="mt-6 text-center">
           <div className="bg-gray-50 border rounded-lg p-4">
             <p className="text-sm text-gray-600">Butuh bantuan? Tim customer service kami siap membantu Anda 24/7</p>
-            <p className="text-sm text-gray-500 mt-1">WhatsApp: +62 812-3456-7890 | Email: support@premiumstore.com</p>
+            <p className="text-sm text-gray-500 mt-1">WhatsApp: +62 96-3037-5723
+ | Email: rivaz.store15@gmail.com
+</p>
           </div>
         </div>
       </div>

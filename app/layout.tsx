@@ -9,7 +9,7 @@ import { AuthProvider } from "@/components/auth-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Premium Store - Akun Premium & IndoSMM Services",
+  title: "Rivazstore - Akun Premium & IndoSMM Services",
   description: "Toko online terpercaya untuk akun premium dan layanan IndoSMM",
   generator: "v0.dev",
 }

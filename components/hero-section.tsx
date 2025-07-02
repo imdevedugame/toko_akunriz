@@ -22,7 +22,11 @@ export function HeroSection() {
                 {/* Logo & Brand */}
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-white font-bold text-xl">PS</span>
+                   <img
+                  src="/Logo.png"
+                  alt="PremiumStore Logo"
+                  className="w-full h-full mb-4 object-cover"
+                />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">PremiumStore</h2>

@@ -64,11 +64,15 @@ export default function Navbar() {
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
             <Link href="/" className="flex items-center group">
-              <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center shadow-sm group-hover:bg-orange-600 transition-colors duration-200">
-                <Package className="h-5 w-5 text-white" />
-              </div>
+                <div className="w-15 h-15 mb-5  rounded-lg overflow-hidden group-hover:opacity-90 transition-all duration-200">
+                <img
+                  src="/Logo.png"
+                  alt="PremiumStore Logo"
+                  className="w-full h-full ms-2 object-cover"
+                />
+                </div>
               <div className="ml-3 hidden sm:block">
-                <span className="text-xl font-bold text-gray-900">PremiumStore</span>
+                <span className="text-xl font-bold text-gray-900">Rivazstore</span>
                 <div className="text-xs text-gray-500">Trusted Digital Services</div>
               </div>
             </Link>
@@ -224,7 +228,7 @@ export default function Navbar() {
                       <Package className="h-5 w-5 text-white" />
                     </div>
                     <div className="ml-3">
-                      <span className="text-xl font-bold text-gray-900">PremiumStore</span>
+                      <span className="text-xl font-bold text-gray-900">Rivazstore</span>
                       <div className="text-xs text-gray-500">Trusted Digital Services</div>
                     </div>
                   </div>

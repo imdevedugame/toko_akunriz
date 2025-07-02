@@ -637,15 +637,16 @@ export default function ProductDetailPage() {
               <ul className="space-y-3 text-gray-400">
                 <li className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  <span>+62 812-3456-7890</span>
+                  <span>+62 96-3037-5723
+</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  <span>support@digitalstore.com</span>
+                  <span>rivaz.store15@gmail.com</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  <span>Jakarta, Indonesia</span>
+                  <span>Semarang, Indonesia</span>
                 </li>
               </ul>
             </div>
@@ -671,7 +672,7 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Digital Store. All rights reserved.</p>
+            <p>&copy; 2025 Digital Store. All rights reserved.</p>
           </div>
         </div>
       </footer>

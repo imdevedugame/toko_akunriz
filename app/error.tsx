@@ -77,7 +77,8 @@ export default function Error({
           {/* Help Notice */}
           <div className="mt-6 pt-6 border-t">
             <p className="text-sm text-gray-600">Jika masalah berlanjut, silakan hubungi tim support kami</p>
-            <p className="text-xs text-gray-500 mt-1">WhatsApp: +62 812-3456-7890 | Email: support@premiumstore.com</p>
+            <p className="text-xs text-gray-500 mt-1">WhatsApp: +62 812-3456-7890 | Email:rivaz.store15@gmail.com
+</p>
           </div>
         </CardContent>
       </Card>
