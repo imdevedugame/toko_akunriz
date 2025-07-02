@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Eye, EyeOff, Loader2, User, Mail, Phone, Lock, Wallet } from "lucide-react"
+import { Eye, EyeOff, Loader2, User, Mail, Phone, Lock } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 
 export default function ProfilePage() {
@@ -125,77 +125,71 @@ export default function ProfilePage() {
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount)
-  }
-
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-amber-600"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Pengaturan Profil</h1>
-          <p className="text-gray-600">Kelola informasi akun dan keamanan Anda</p>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100 py-4 sm:py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-6 sm:mb-8 text-center sm:text-left">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Pengaturan Profil</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Kelola informasi akun dan keamanan Anda</p>
         </div>
 
+        {/* Alert Messages */}
         {message && (
-          <Alert className="mb-6 border-green-200 bg-green-50">
+          <Alert className="mb-4 sm:mb-6 border-green-200 bg-green-50">
             <AlertDescription className="text-green-800">{message}</AlertDescription>
           </Alert>
         )}
 
         {error && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive" className="mb-4 sm:mb-6">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* User Info Card */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="mr-2 h-5 w-5" />
+          <Card className="lg:col-span-1 border-0 shadow-xl bg-gradient-to-br from-white via-amber-50/30 to-orange-50/50 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-lg sm:text-xl">
+                <div className="w-8 h-8 bg-gradient-to-br from-amber-600 to-orange-600 rounded-lg flex items-center justify-center mr-3">
+                  <User className="h-4 w-4 text-white" />
+                </div>
                 Informasi Akun
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 sm:space-y-6">
               <div>
-                <Label className="text-sm font-medium text-gray-500">Nama</Label>
-                <p className="text-lg font-medium">{user.name}</p>
+                <Label className="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wide">Nama</Label>
+                <p className="text-base sm:text-lg font-medium text-gray-900 mt-1">{user.name}</p>
               </div>
-
               <div>
-                <Label className="text-sm font-medium text-gray-500">Email</Label>
-                <p className="text-lg">{user.email}</p>
+                <Label className="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wide">Email</Label>
+                <p className="text-base sm:text-lg text-gray-900 mt-1 break-all">{user.email}</p>
               </div>
-
               <div>
-                <Label className="text-sm font-medium text-gray-500">Role</Label>
-                <Badge
-                  variant={user.role === "admin" ? "destructive" : user.role === "reseller" ? "default" : "secondary"}
-                  className="mt-1"
-                >
-                  {user.role === "admin" ? "Administrator" : user.role === "reseller" ? "Reseller" : "User"}
-                </Badge>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Saldo</Label>
-                <div className="flex items-center mt-1">
-                  <Wallet className="mr-2 h-4 w-4 text-green-600" />
-                  <span className="text-lg font-semibold text-green-600">{formatCurrency(user.balance)}</span>
+                <Label className="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wide">Role</Label>
+                <div className="mt-2">
+                  <Badge
+                    variant={user.role === "admin" ? "destructive" : user.role === "reseller" ? "default" : "secondary"}
+                    className={`${
+                      user.role === "admin"
+                        ? "bg-red-100 text-red-700 hover:bg-red-100"
+                        : user.role === "reseller"
+                          ? "bg-amber-100 text-amber-700 hover:bg-amber-100"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                    } text-xs sm:text-sm px-3 py-1`}
+                  >
+                    {user.role === "admin" ? "Administrator" : user.role === "reseller" ? "Reseller" : "User"}
+                  </Badge>
                 </div>
               </div>
             </CardContent>
@@ -203,65 +197,85 @@ export default function ProfilePage() {
 
           {/* Settings Tabs */}
           <div className="lg:col-span-2">
-            <Tabs defaultValue="profile" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="profile">Edit Profil</TabsTrigger>
-                <TabsTrigger value="password">Ubah Password</TabsTrigger>
+            <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
+              <TabsList className="grid w-full grid-cols-2 bg-white/50 backdrop-blur-sm border border-amber-200">
+                <TabsTrigger
+                  value="profile"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-600 data-[state=active]:to-orange-600 data-[state=active]:text-white text-sm sm:text-base"
+                >
+                  Edit Profil
+                </TabsTrigger>
+                <TabsTrigger
+                  value="password"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-600 data-[state=active]:to-orange-600 data-[state=active]:text-white text-sm sm:text-base"
+                >
+                  Ubah Password
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="profile">
-                <Card>
+                <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-green-50/30 to-emerald-50/50 backdrop-blur-sm">
                   <CardHeader>
-                    <CardTitle>Edit Profil</CardTitle>
-                    <CardDescription>Perbarui informasi profil Anda</CardDescription>
+                    <CardTitle className="text-lg sm:text-xl text-gray-900">Edit Profil</CardTitle>
+                    <CardDescription className="text-sm sm:text-base">Perbarui informasi profil Anda</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <form onSubmit={handleProfileUpdate} className="space-y-4">
+                    <form onSubmit={handleProfileUpdate} className="space-y-4 sm:space-y-6">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Nama Lengkap</Label>
+                        <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                          Nama Lengkap
+                        </Label>
                         <div className="relative">
-                          <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <User className="absolute left-3 top-3 h-4 w-4 text-amber-500" />
                           <Input
                             id="name"
                             type="text"
                             value={profileData.name}
                             onChange={(e) => setProfileData((prev) => ({ ...prev, name: e.target.value }))}
-                            className="pl-10"
+                            className="pl-10 border-amber-200 focus:border-amber-500 focus:ring-amber-500 text-sm sm:text-base"
                             required
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                          Email
+                        </Label>
                         <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Mail className="absolute left-3 top-3 h-4 w-4 text-amber-500" />
                           <Input
                             id="email"
                             type="email"
                             value={profileData.email}
                             onChange={(e) => setProfileData((prev) => ({ ...prev, email: e.target.value }))}
-                            className="pl-10"
+                            className="pl-10 border-amber-200 focus:border-amber-500 focus:ring-amber-500 text-sm sm:text-base"
                             required
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Nomor Telepon</Label>
+                        <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                          Nomor Telepon
+                        </Label>
                         <div className="relative">
-                          <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Phone className="absolute left-3 top-3 h-4 w-4 text-amber-500" />
                           <Input
                             id="phone"
                             type="tel"
                             value={profileData.phone}
                             onChange={(e) => setProfileData((prev) => ({ ...prev, phone: e.target.value }))}
-                            className="pl-10"
+                            className="pl-10 border-amber-200 focus:border-amber-500 focus:ring-amber-500 text-sm sm:text-base"
                           />
                         </div>
                       </div>
 
-                      <Button type="submit" disabled={isLoading}>
+                      <Button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full sm:w-auto bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105 text-sm sm:text-base px-6 py-2"
+                      >
                         {isLoading ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -277,29 +291,33 @@ export default function ProfilePage() {
               </TabsContent>
 
               <TabsContent value="password">
-                <Card>
+                <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-purple-50/30 to-pink-50/50 backdrop-blur-sm">
                   <CardHeader>
-                    <CardTitle>Ubah Password</CardTitle>
-                    <CardDescription>Perbarui password untuk keamanan akun Anda</CardDescription>
+                    <CardTitle className="text-lg sm:text-xl text-gray-900">Ubah Password</CardTitle>
+                    <CardDescription className="text-sm sm:text-base">
+                      Perbarui password untuk keamanan akun Anda
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                    <form onSubmit={handlePasswordUpdate} className="space-y-4 sm:space-y-6">
                       <div className="space-y-2">
-                        <Label htmlFor="currentPassword">Password Saat Ini</Label>
+                        <Label htmlFor="currentPassword" className="text-sm font-medium text-gray-700">
+                          Password Saat Ini
+                        </Label>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
                           <Input
                             id="currentPassword"
                             type={showPasswords.current ? "text" : "password"}
                             value={passwordData.currentPassword}
                             onChange={(e) => setPasswordData((prev) => ({ ...prev, currentPassword: e.target.value }))}
-                            className="pl-10 pr-10"
+                            className="pl-10 pr-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 text-sm sm:text-base"
                             required
                           />
                           <button
                             type="button"
                             onClick={() => setShowPasswords((prev) => ({ ...prev, current: !prev.current }))}
-                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-3 text-purple-400 hover:text-purple-600"
                           >
                             {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
@@ -307,21 +325,23 @@ export default function ProfilePage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="newPassword">Password Baru</Label>
+                        <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700">
+                          Password Baru
+                        </Label>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
                           <Input
                             id="newPassword"
                             type={showPasswords.new ? "text" : "password"}
                             value={passwordData.newPassword}
                             onChange={(e) => setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
-                            className="pl-10 pr-10"
+                            className="pl-10 pr-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 text-sm sm:text-base"
                             required
                           />
                           <button
                             type="button"
                             onClick={() => setShowPasswords((prev) => ({ ...prev, new: !prev.new }))}
-                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-3 text-purple-400 hover:text-purple-600"
                           >
                             {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
@@ -329,28 +349,34 @@ export default function ProfilePage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Konfirmasi Password Baru</Label>
+                        <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                          Konfirmasi Password Baru
+                        </Label>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
                           <Input
                             id="confirmPassword"
                             type={showPasswords.confirm ? "text" : "password"}
                             value={passwordData.confirmPassword}
                             onChange={(e) => setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                            className="pl-10 pr-10"
+                            className="pl-10 pr-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 text-sm sm:text-base"
                             required
                           />
                           <button
                             type="button"
                             onClick={() => setShowPasswords((prev) => ({ ...prev, confirm: !prev.confirm }))}
-                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-3 text-purple-400 hover:text-purple-600"
                           >
                             {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
                       </div>
 
-                      <Button type="submit" disabled={isLoading}>
+                      <Button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105 text-sm sm:text-base px-6 py-2"
+                      >
                         {isLoading ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

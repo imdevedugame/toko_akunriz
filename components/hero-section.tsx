@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shield, Zap, Users, CheckCircle, TrendingUp } from "lucide-react"
+import { Shield, Zap, Users, CheckCircle, TrendingUp, Lock, Gem, ShoppingCart, BookOpen } from "lucide-react"
 
 export function HeroSection() {
   return (
@@ -22,11 +22,7 @@ export function HeroSection() {
                 {/* Logo & Brand */}
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                   <img
-                  src="/Logo.png"
-                  alt="PremiumStore Logo"
-                  className="w-full h-full mb-4 object-cover"
-                />
+                    <img src="/Logo.png" alt="PremiumStore Logo" className="w-full h-full mb-4 object-cover" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">PremiumStore</h2>
@@ -65,14 +61,16 @@ export function HeroSection() {
                     size="lg"
                     className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
                   >
-                    🛒 Belanja Sekarang
+                    <ShoppingCart className="h-5 w-5 mr-2" />
+                    Belanja Sekarang
                   </Button>
                   <Button
                     size="lg"
                     variant="outline"
                     className="border-2 border-gray-300 hover:border-amber-600 hover:text-amber-600 px-8 py-3 text-lg font-semibold bg-transparent transition-all transform hover:scale-105"
                   >
-                    📋 Lihat Katalog
+                    <BookOpen className="h-5 w-5 mr-2" />
+                    Lihat Katalog
                   </Button>
                 </div>
 
@@ -170,7 +168,7 @@ export function HeroSection() {
                   </Card>
                 </div>
 
-                {/* New floating stats card */}
+                {/* Updated floating stats card with proper icons */}
                 <Card
                   className="group border-0 shadow-lg hover:shadow-xl transition-all duration-500 bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white relative overflow-hidden animate-fade-in-up"
                   style={{ animationDelay: "0.4s" }}
@@ -179,20 +177,20 @@ export function HeroSection() {
                   <CardContent className="p-6 relative z-10">
                     <div className="flex items-center justify-between">
                       <div className="text-center flex-1">
-                        <div className="text-2xl font-bold text-amber-400 group-hover:text-amber-300 transition-colors">
-                          ⚡
+                        <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300">
+                          <Zap className="h-5 w-5 text-white" />
                         </div>
                         <div className="text-sm opacity-80">Instant Delivery</div>
                       </div>
                       <div className="text-center flex-1">
-                        <div className="text-2xl font-bold text-green-400 group-hover:text-green-300 transition-colors">
-                          🔒
+                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300">
+                          <Lock className="h-5 w-5 text-white" />
                         </div>
                         <div className="text-sm opacity-80">Secure Payment</div>
                       </div>
                       <div className="text-center flex-1">
-                        <div className="text-2xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">
-                          💎
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300">
+                          <Gem className="h-5 w-5 text-white" />
                         </div>
                         <div className="text-sm opacity-80">Premium Quality</div>
                       </div>
@@ -216,7 +214,6 @@ export function HeroSection() {
             transform: translateY(0);
           }
         }
-        
         @keyframes pulse-slow {
           0%, 100% {
             opacity: 1;
@@ -225,7 +222,6 @@ export function HeroSection() {
             opacity: 0.8;
           }
         }
-        
         @keyframes gradient-x {
           0%, 100% {
             background-position: 0% 50%;
@@ -234,16 +230,13 @@ export function HeroSection() {
             background-position: 100% 50%;
           }
         }
-        
         .animate-fade-in-up {
           animation: fade-in-up 0.6s ease-out forwards;
           opacity: 0;
         }
-        
         .animate-pulse-slow {
           animation: pulse-slow 3s ease-in-out infinite;
         }
-        
         .animate-gradient-x {
           background-size: 200% 200%;
           animation: gradient-x 3s ease infinite;

@@ -8,7 +8,8 @@ import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { CreditCard, Clock, TrendingUp, X, AlertCircle } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { CreditCard, Clock, TrendingUp, X, AlertCircle, User, Hash, MessageSquare, ShoppingCart, CheckCircle, Zap } from 'lucide-react'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Image from "next/image"
 
@@ -108,7 +109,7 @@ export function IndoSMMPurchaseModal({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          service_id: service.id, // Use the correct field name
+          service_id: service.id,
           target: formData.target,
           quantity: quantity,
           notes: formData.notes,
@@ -120,7 +121,6 @@ export function IndoSMMPurchaseModal({
       if (response.ok) {
         console.log("✅ Order created successfully:", data)
         console.log("🎯 Redirecting to payment page...")
-        // Redirect to payment page
         window.location.href = data.order.payment_url
       } else {
         console.error("❌ Order creation failed:", data)
@@ -143,156 +143,248 @@ export function IndoSMMPurchaseModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg max-w-[95vw] max-h-[95vh] overflow-y-auto bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100 border-0 shadow-2xl">
+        <DialogHeader className="space-y-3 pb-4">
           <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
-              Konfirmasi Pemesanan
+            <DialogTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                <ShoppingCart className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <div className="text-lg sm:text-xl">Form Pemesanan</div>
+                <div className="text-sm font-normal text-gray-600">Layanan Social Media Marketing</div>
+              </div>
             </DialogTitle>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onClose}
+              className="hover:bg-amber-100 rounded-full"
+            >
+              <X className="h-5 w-5" />
             </Button>
           </div>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Service Info */}
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-4">
-                {service.image_url && (
-                  <div className="flex-shrink-0">
+          {/* Service Info Card */}
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-amber-50/30 to-orange-50/50 backdrop-blur-sm">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                {/* Service Image or Icon */}
+                <div className="flex-shrink-0 flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl shadow-md overflow-hidden">
+                  {service.image_url ? (
                     <Image
-                      src={service.image_url || "/placeholder.svg"}
+                      src="/sosmed.png"
                       alt={service.category}
-                      width={48}
-                      height={48}
-                      className="rounded-lg"
+                      width={56}
+                      height={56}
+                      className="rounded-xl object-cover"
                     />
+                  ) : (
+                    <TrendingUp className="h-7 w-7 text-white" />
+                  )}
+                </div>
+
+                {/* Service Info */}
+                <div className="flex-1 min-w-0 w-full">
+                  <div className="flex flex-col gap-1">
+                    <h3 className="font-bold text-gray-900 text-base sm:text-lg line-clamp-2">
+                      {service.name}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge 
+                        variant="secondary" 
+                        className="bg-amber-100 text-amber-700 hover:bg-amber-100 text-xs"
+                      >
+                        {service.category}
+                      </Badge>
+                      {userRole === "reseller" && (
+                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs">
+                          Reseller Price
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                )}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold text-gray-900">{service.name}</h3>
-                    <Badge variant="secondary">{service.category}</Badge>
-                    {userRole === "reseller" && <Badge className="bg-green-500">Reseller Price</Badge>}
+                  <div className="grid grid-cols-3 gap-2 mt-3 text-xs sm:text-sm">
+                    <div className="flex flex-col items-start">
+                      <span className="text-gray-600">Min</span>
+                      <span className="font-medium">{service.min_order.toLocaleString()}</span>
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <span className="text-gray-600">Max</span>
+                      <span className="font-medium">{service.max_order.toLocaleString()}</span>
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <span className="text-gray-600">Rate</span>
+                      <span className="font-bold text-amber-600">{formatPrice(rate)} / 1K</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span>Min: {service.min_order.toLocaleString()}</span>
-                    <span>Max: {service.max_order.toLocaleString()}</span>
-                    <span className="font-medium text-blue-600">{formatPrice(rate)} / 1K</span>
+                  <div className="text-xs text-gray-500 mt-2">
+                    Service ID: {service.service_id}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">Service ID: {service.service_id}</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Order Form */}
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="target" className="text-sm font-medium text-gray-700">
-                Target URL/Username *
-              </Label>
-              <Input
-                id="target"
-                placeholder="@username atau https://..."
-                value={formData.target}
-                onChange={(e) => handleInputChange("target", e.target.value)}
-                className={errors.target ? "border-red-500" : ""}
-              />
-              {errors.target && <p className="text-sm text-red-500 mt-1">{errors.target}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="quantity" className="text-sm font-medium text-gray-700">
-                Quantity *
-              </Label>
-              <Input
-                id="quantity"
-                type="number"
-                min={service.min_order}
-                max={service.max_order}
-                value={formData.quantity}
-                onChange={(e) => handleInputChange("quantity", e.target.value)}
-                className={errors.quantity ? "border-red-500" : ""}
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>Min: {service.min_order.toLocaleString()}</span>
-                <span>Max: {service.max_order.toLocaleString()}</span>
-              </div>
-              {errors.quantity && <p className="text-sm text-red-500 mt-1">{errors.quantity}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="notes" className="text-sm font-medium text-gray-700">
-                Notes (Optional)
-              </Label>
-              <Input
-                id="notes"
-                placeholder="Additional notes..."
-                value={formData.notes}
-                onChange={(e) => handleInputChange("notes", e.target.value)}
-                className="mt-1"
-              />
-            </div>
-          </div>
-
-          {/* Order Summary */}
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-            <CardContent className="p-4">
-              <h4 className="font-medium mb-3 text-blue-900">Order Summary</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Service:</span>
-                  <span className="font-medium">{service.name}</span>
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 backdrop-blur-sm">
+            <CardContent className="p-4 sm:p-6">
+              <div className="space-y-4 sm:space-y-5">
+                {/* Target Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="target" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <User className="h-4 w-4 text-blue-500" />
+                    Target URL/Username *
+                  </Label>
+                  <Input
+                    id="target"
+                    placeholder="@username atau https://..."
+                    value={formData.target}
+                    onChange={(e) => handleInputChange("target", e.target.value)}
+                    className={`h-11 border-2 transition-colors ${
+                      errors.target 
+                        ? "border-red-500 focus:border-red-500" 
+                        : "border-blue-200 focus:border-blue-500"
+                    }`}
+                  />
+                  {errors.target && (
+                    <div className="flex items-center gap-2 text-sm text-red-600">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.target}
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500">
+                    Pastikan akun tidak dalam mode private
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Quantity:</span>
-                  <span className="font-medium">{quantity.toLocaleString()}</span>
+
+                {/* Quantity Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="quantity" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-blue-500" />
+                    Jumlah *
+                  </Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min={service.min_order}
+                    max={service.max_order}
+                    value={formData.quantity}
+                    onChange={(e) => handleInputChange("quantity", e.target.value)}
+                    className={`h-11 border-2 transition-colors ${
+                      errors.quantity 
+                        ? "border-red-500 focus:border-red-500" 
+                        : "border-blue-200 focus:border-blue-500"
+                    }`}
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Min: {service.min_order.toLocaleString()}</span>
+                    <span>Max: {service.max_order.toLocaleString()}</span>
+                  </div>
+                  {errors.quantity && (
+                    <div className="flex items-center gap-2 text-sm text-red-600">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.quantity}
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Rate per 1K:</span>
-                  <span className="font-medium">{formatPrice(rate)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center text-lg font-bold">
-                  <span className="text-blue-900">Total:</span>
-                  <span className="text-blue-600">{formatPrice(totalPrice)}</span>
+
+                {/* Notes Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-blue-500" />
+                    Catatan (Opsional)
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Catatan tambahan untuk pesanan..."
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange("notes", e.target.value)}
+                    rows={3}
+                    className="border-2 border-blue-200 focus:border-blue-500 resize-none"
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Warning */}
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Pastikan target akun tidak dalam mode private dan dapat diakses publik. Order akan otomatis dikirim ke
-              IndoSMM setelah pembayaran berhasil.
+          {/* Order Summary */}
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-green-200">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <h4 className="font-bold text-green-900 text-base sm:text-lg">Ringkasan Pesanan</h4>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div className="flex justify-between sm:flex-col sm:justify-start">
+                    <span className="text-gray-600">Layanan:</span>
+                    <span className="font-medium text-right sm:text-left line-clamp-2">
+                      {service.name}
+                    </span>
+                  </div>
+                  <div className="flex justify-between sm:flex-col sm:justify-start">
+                    <span className="text-gray-600">Jumlah:</span>
+                    <span className="font-medium">{quantity.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between sm:flex-col sm:justify-start">
+                    <span className="text-gray-600">Rate per 1K:</span>
+                    <span className="font-medium">{formatPrice(rate)}</span>
+                  </div>
+                  <div className="flex justify-between sm:flex-col sm:justify-start">
+                    <span className="text-gray-600">Kategori:</span>
+                    <span className="font-medium">{service.category}</span>
+                  </div>
+                </div>
+                
+                <Separator className="bg-green-200" />
+                
+                <div className="flex justify-between items-center p-3 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg">
+                  <span className="text-lg font-bold text-green-900">Total Pembayaran:</span>
+                  <span className="text-xl sm:text-2xl font-bold text-green-600">
+                    {formatPrice(totalPrice)}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Warning Alert */}
+          <Alert className="border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800 text-sm">
+              <strong>Penting:</strong> Pastikan target akun dapat diakses publik dan tidak dalam mode private. 
+              Pesanan akan otomatis diproses setelah pembayaran berhasil dikonfirmasi.
             </AlertDescription>
           </Alert>
 
           {/* Action Buttons */}
-          <div className="flex space-x-3">
-            <Button variant="outline" onClick={onClose} className="flex-1 bg-transparent">
-              Cancel
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Button 
+              variant="outline" 
+              onClick={onClose} 
+              className="flex-1 h-12 bg-white hover:bg-gray-50 border-2 border-gray-300 font-medium"
+              disabled={isLoading}
+            >
+              Batal
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isLoading || totalPrice <= 0}
-              className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+              disabled={isLoading || totalPrice <= 0 || Object.keys(errors).length > 0}
+              className="flex-1 h-12 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02]"
             >
               {isLoading ? (
                 <>
-                  <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
+                  <Clock className="h-5 w-5 mr-2 animate-spin" />
+                  Memproses...
                 </>
               ) : (
                 <>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Pay {formatPrice(totalPrice)}
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  Bayar {formatPrice(totalPrice)}
                 </>
               )}
             </Button>

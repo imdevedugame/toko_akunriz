@@ -3,30 +3,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  ShoppingCart,
-  TrendingUp,
-  Shield,
-  Zap,
-  Crown,
-  Package,
-  Eye,
-  Heart,
-  Instagram,
-  Youtube,
-  Music,
-  Facebook,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-} from "lucide-react"
+import { TrendingUp, Zap, Crown, Package, Heart, Instagram, Youtube, Music, Facebook, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { useAuth } from "@/components/auth-provider"
 import { IndoSMMPurchaseModal } from "@/components/indosmm-purchase-modal"
-import Image from "next/image"
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface IndoSMMService {
@@ -69,120 +50,6 @@ const categoryColors = {
   default: "bg-amber-500",
 }
 
-const tutorials = [
-  {
-    id: "pembelian-akun",
-    title: "Tutorial Pembelian Akun Premium",
-    description:
-      "Panduan lengkap cara membeli akun premium Netflix, Spotify, Disney+, dan platform lainnya dengan aman",
-    icon: ShoppingCart,
-    color: "from-blue-500 to-blue-600",
-    steps: 4,
-    duration: "5 menit",
-    difficulty: "Mudah",
-    category: "Pembelian",
-  },
-  {
-    id: "layanan-indosmm",
-    title: "Tutorial Layanan IndoSMM",
-    description: "Cara memesan followers, likes, views, dan engagement untuk semua platform media sosial Anda",
-    icon: TrendingUp,
-    color: "from-green-500 to-emerald-600",
-    steps: 5,
-    duration: "3 menit",
-    difficulty: "Mudah",
-    category: "SMM",
-  },
-  {
-    id: "keamanan-akun",
-    title: "Tips Keamanan Akun",
-    description: "Panduan menjaga keamanan akun premium dan cara menggunakan dengan bijak",
-    icon: Shield,
-    color: "from-purple-500 to-purple-600",
-    steps: 6,
-    duration: "7 menit",
-    difficulty: "Menengah",
-    category: "Keamanan",
-  },
-  {
-    id: "troubleshooting",
-    title: "Mengatasi Masalah Umum",
-    description: "Solusi untuk masalah yang sering terjadi saat menggunakan layanan kami",
-    icon: Zap,
-    color: "from-orange-500 to-red-500",
-    steps: 8,
-    duration: "10 menit",
-    difficulty: "Lanjutan",
-    category: "Bantuan",
-  },
-]
-
-const quickTips = [
-  {
-    category: "Pembelian Akun Premium",
-    icon: ShoppingCart,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
-    tips: [
-      "Jangan pernah mengganti password akun yang sudah dibeli",
-      "Gunakan maksimal 1 device secara bersamaan",
-      "Selalu logout setelah selesai menggunakan",
-      "Simpan data akun di tempat yang aman",
-      "Laporkan jika akun bermasalah dalam 24 jam",
-      "Jangan share akun dengan orang lain",
-    ],
-  },
-  {
-    category: "Layanan IndoSMM",
-    icon: TrendingUp,
-    color: "text-green-600",
-    bgColor: "bg-green-50",
-    tips: [
-      "Pastikan akun media sosial tidak dalam mode private",
-      "Masukkan username atau link dengan format yang benar",
-      "Proses pengiriman membutuhkan waktu 1-24 jam",
-      "Cek status pesanan di halaman riwayat pembelian",
-      "Jangan ubah username saat proses berlangsung",
-      "Hubungi support jika ada kendala",
-    ],
-  },
-  {
-    category: "Keamanan & Privasi",
-    icon: Shield,
-    color: "text-purple-600",
-    bgColor: "bg-purple-50",
-    tips: [
-      "Gunakan koneksi internet yang aman dan terpercaya",
-      "Jangan login dari device publik atau tidak dikenal",
-      "Aktifkan notifikasi untuk update status pesanan",
-      "Backup data penting secara berkala",
-      "Gunakan password yang kuat untuk akun Anda",
-      "Laporkan aktivitas mencurigakan segera",
-    ],
-  },
-]
-
-const faqItems = [
-  {
-    question: "Berapa lama proses pengiriman akun premium?",
-    answer:
-      "Akun premium biasanya dikirim dalam 1-5 menit setelah pembayaran berhasil. Untuk layanan SMM, proses membutuhkan 1-24 jam.",
-  },
-  {
-    question: "Apakah ada garansi untuk produk yang dibeli?",
-    answer:
-      "Ya, kami memberikan garansi 24 jam untuk akun premium dan garansi refill untuk layanan SMM sesuai ketentuan.",
-  },
-  {
-    question: "Bagaimana cara mengetahui status pesanan saya?",
-    answer: "Anda dapat mengecek status pesanan di halaman 'Riwayat Pesanan' setelah login ke akun Anda.",
-  },
-  {
-    question: "Apakah aman menggunakan layanan ini?",
-    answer: "Sangat aman. Kami menggunakan sistem keamanan berlapis dan tidak menyimpan data sensitif pelanggan.",
-  },
-]
-
 export default function ServicesPage() {
   const { user } = useAuth()
   const [services, setServices] = useState<IndoSMMService[]>([])
@@ -199,11 +66,6 @@ export default function ServicesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedService, setSelectedService] = useState<IndoSMMService | null>(null)
-  const [orderData, setOrderData] = useState({
-    target: "",
-    quantity: "",
-    notes: "",
-  })
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [favorites, setFavorites] = useState<Set<number>>(new Set())
 
@@ -257,26 +119,11 @@ export default function ServicesPage() {
   }
 
   const handleServiceSelect = (service: IndoSMMService) => {
+    if (!user) {
+      alert("Silahkan login terlebih dahulu untuk memesan layanan")
+      return
+    }
     setSelectedService(service)
-    setOrderData({
-      target: "",
-      quantity: service.min_order.toString(),
-      notes: "",
-    })
-  }
-
-  const handleOrder = () => {
-    if (!selectedService || !orderData.target || !orderData.quantity) {
-      alert("Mohon lengkapi semua field yang diperlukan")
-      return
-    }
-
-    const quantity = Number.parseInt(orderData.quantity)
-    if (quantity < selectedService.min_order || quantity > selectedService.max_order) {
-      alert(`Quantity harus antara ${selectedService.min_order} - ${selectedService.max_order}`)
-      return
-    }
-
     setShowPurchaseModal(true)
   }
 
@@ -309,7 +156,7 @@ export default function ServicesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100">
         <div className="container mx-auto px-4 py-4">
           <div className="mb-6">
             <Skeleton className="h-8 w-48 mb-2" />
@@ -357,7 +204,7 @@ export default function ServicesPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100">
       <div className="container mx-auto px-4 py-4">
         {/* Mobile-First Header */}
         <div className="mb-6">
@@ -373,7 +220,9 @@ export default function ServicesPage() {
               size="sm"
               onClick={() => handleCategoryChange("all")}
               className={`flex-shrink-0 text-xs ${
-                selectedCategory === "all" ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-white hover:bg-gray-50"
+                selectedCategory === "all"
+                  ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
+                  : "bg-white hover:bg-gray-50"
               }`}
             >
               Semua
@@ -388,7 +237,7 @@ export default function ServicesPage() {
                   onClick={() => handleCategoryChange(category)}
                   className={`flex-shrink-0 text-xs ${
                     selectedCategory === category
-                      ? "bg-amber-500 hover:bg-amber-600 text-white"
+                      ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
                       : "bg-white hover:bg-gray-50"
                   }`}
                 >
@@ -401,21 +250,20 @@ export default function ServicesPage() {
         </div>
 
         {/* Search and Filters */}
-        <Card className="mb-4 shadow-sm">
+        <Card className="mb-4 shadow-xl border-0 bg-gradient-to-br from-white via-amber-50/30 to-orange-50/50 backdrop-blur-sm">
           <CardContent className="p-4">
             <div className="space-y-3">
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-500 h-4 w-4" />
                   <Input
                     placeholder="Cari layanan..."
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-10 h-10 border-gray-200 focus:border-amber-500"
+                    className="pl-10 h-10 border-amber-200 focus:border-amber-500 focus:ring-amber-500"
                   />
                 </div>
               </div>
-
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs text-gray-600">
                   <Package className="h-3 w-3" />
@@ -425,7 +273,7 @@ export default function ServicesPage() {
                   </span>
                 </div>
                 {user?.role === "reseller" && (
-                  <Badge className="bg-green-500 text-white text-xs px-2 py-1">
+                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs px-2 py-1">
                     <Crown className="h-3 w-3 mr-1" />
                     Reseller
                   </Badge>
@@ -442,7 +290,7 @@ export default function ServicesPage() {
             const colorClass = categoryColors[category as keyof typeof categoryColors] || categoryColors.default
 
             return (
-              <Card key={category} className="shadow-sm">
+              <Card key={category} className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
                 <CardHeader className={`${colorClass} text-white p-4`}>
                   <CardTitle className="flex items-center text-lg">
                     <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
@@ -459,38 +307,39 @@ export default function ServicesPage() {
                     {categoryServices.map((service) => (
                       <div
                         key={service.id}
-                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                          selectedService?.id === service.id
-                            ? "border-amber-400 bg-amber-50"
-                            : "border-gray-200 hover:border-amber-300 hover:bg-gray-50"
-                        }`}
+                        className="p-4 border border-amber-200 rounded-lg cursor-pointer transition-all duration-300 hover:border-amber-400 hover:bg-gradient-to-br hover:from-amber-50 hover:to-orange-50 hover:shadow-md transform hover:scale-[1.02]"
                         onClick={() => handleServiceSelect(service)}
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h4 className="font-medium text-sm mb-2 line-clamp-2">{service.name}</h4>
+                            <h4 className="font-medium text-sm mb-2 line-clamp-2 text-gray-900">{service.name}</h4>
                             <div className="flex flex-wrap gap-2 text-xs mb-2">
-                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                                 Min: {service.min_order.toLocaleString()}
                               </span>
-                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full">
                                 Max: {service.max_order.toLocaleString()}
                               </span>
                             </div>
-                            <div className="text-lg font-bold text-amber-600">
+                            <div className="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
                               {formatPrice(getRate(service), 1000)} / 1K
                             </div>
+                            {!user && (
+                              <div className="text-xs text-gray-500 mt-1">Klik untuk memesan (Login diperlukan)</div>
+                            )}
                           </div>
                           <div className="flex flex-col items-end gap-2 ml-4">
                             {user?.role === "reseller" && (
-                              <Badge className="bg-green-500 text-white text-xs px-2 py-1">Reseller</Badge>
+                              <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs px-2 py-1">
+                                Reseller
+                              </Badge>
                             )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
                                 toggleFavorite(service.id)
                               }}
-                              className="w-8 h-8 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50"
+                              className="w-8 h-8 bg-white border border-amber-200 rounded-full flex items-center justify-center hover:bg-amber-50 hover:border-amber-300 transition-colors"
                             >
                               <Heart
                                 className={`h-4 w-4 ${
@@ -500,11 +349,6 @@ export default function ServicesPage() {
                             </button>
                           </div>
                         </div>
-                        {selectedService?.id === service.id && (
-                          <div className="mt-3 pt-3 border-t border-amber-200">
-                            <div className="text-xs text-amber-700 font-medium">✓ Layanan dipilih</div>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -514,128 +358,10 @@ export default function ServicesPage() {
           })}
         </div>
 
-        {/* Order Form - Mobile Optimized */}
-        {selectedService && (
-          <Card className="mb-6 shadow-sm">
-            <CardHeader className="bg-amber-500 text-white p-4">
-              <CardTitle className="text-lg">Form Pemesanan</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 space-y-4">
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Layanan Dipilih</Label>
-                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <Image src="/sosmed.png" alt={selectedService.category} width={16} height={16} />
-                    </div>
-                    <div className="font-medium text-sm flex-1">{selectedService.name}</div>
-                    <Badge
-                      className={`${categoryColors[selectedService.category as keyof typeof categoryColors]} text-white text-xs px-2 py-1`}
-                    >
-                      {selectedService.category}
-                    </Badge>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-amber-600">
-                      {formatPrice(getRate(selectedService), 1000)} per 1000
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="target" className="text-sm font-medium mb-2 block">
-                  Target (Username/Link) *
-                </Label>
-                <Input
-                  id="target"
-                  placeholder="@username atau https://..."
-                  value={orderData.target}
-                  onChange={(e) => setOrderData({ ...orderData, target: e.target.value })}
-                  className="h-10 border-gray-200 focus:border-amber-500"
-                />
-                <div className="text-xs text-gray-500 mt-1">Pastikan akun tidak private</div>
-              </div>
-
-              <div>
-                <Label htmlFor="quantity" className="text-sm font-medium mb-2 block">
-                  Jumlah *
-                </Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  min={selectedService.min_order}
-                  max={selectedService.max_order}
-                  value={orderData.quantity}
-                  onChange={(e) => setOrderData({ ...orderData, quantity: e.target.value })}
-                  className="h-10 border-gray-200 focus:border-amber-500"
-                />
-                <div className="text-xs text-gray-500 mt-1 flex justify-between">
-                  <span>Min: {selectedService.min_order.toLocaleString()}</span>
-                  <span>Max: {selectedService.max_order.toLocaleString()}</span>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="notes" className="text-sm font-medium mb-2 block">
-                  Catatan (Opsional)
-                </Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Catatan tambahan..."
-                  value={orderData.notes}
-                  onChange={(e) => setOrderData({ ...orderData, notes: e.target.value })}
-                  rows={3}
-                  className="border-gray-200 focus:border-amber-500 resize-none"
-                />
-              </div>
-
-              {orderData.quantity && (
-                <div className="p-4 bg-amber-100 rounded-lg border border-amber-300">
-                  <div className="text-center">
-                    <div className="text-sm text-gray-600 mb-1">Total Harga:</div>
-                    <div className="text-2xl font-bold text-amber-600">
-                      {formatPrice(getRate(selectedService), Number.parseInt(orderData.quantity) || 0)}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <Button
-                onClick={handleOrder}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium"
-                disabled={!user || !orderData.target || !orderData.quantity}
-              >
-                {!user ? (
-                  <>
-                    <Shield className="h-4 w-4 mr-2" />
-                    Login untuk Memesan
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-4 w-4 mr-2" />
-                    Pesan Sekarang
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {!selectedService && (
-          <div className="text-center py-12">
-            <div className="bg-white rounded-lg p-8 max-w-sm mx-auto shadow-sm">
-              <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Pilih Layanan</h3>
-              <p className="text-sm text-gray-600">Pilih layanan dari daftar di atas untuk memulai pemesanan</p>
-            </div>
-          </div>
-        )}
-
-        {/* Empty State */}
+        {/* Empty State - No services found */}
         {services.length === 0 && !isLoading && (
           <div className="text-center py-12">
-            <div className="bg-white rounded-lg p-8 max-w-sm mx-auto shadow-sm">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 max-w-sm mx-auto shadow-xl border-0">
               <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Tidak Ada Layanan</h3>
               <p className="text-sm text-gray-600">Coba ubah kata kunci pencarian atau kategori</p>
@@ -652,11 +378,10 @@ export default function ServicesPage() {
                 size="sm"
                 onClick={() => handlePageChange(pagination.page - 1)}
                 disabled={!pagination.hasPrev}
-                className="border-gray-200"
+                className="border-amber-200 hover:bg-amber-50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-
               <div className="flex items-center space-x-1">
                 {[...Array(Math.min(3, pagination.pages))].map((_, i) => {
                   const pageNum = i + 1
@@ -667,7 +392,9 @@ export default function ServicesPage() {
                       size="sm"
                       onClick={() => handlePageChange(pageNum)}
                       className={
-                        pagination.page === pageNum ? "bg-amber-500 hover:bg-amber-600 text-white" : "border-gray-200"
+                        pagination.page === pageNum
+                          ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
+                          : "border-amber-200 hover:bg-amber-50"
                       }
                     >
                       {pageNum}
@@ -681,20 +408,19 @@ export default function ServicesPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handlePageChange(pagination.pages)}
-                      className="border-gray-200"
+                      className="border-amber-200 hover:bg-amber-50"
                     >
                       {pagination.pages}
                     </Button>
                   </>
                 )}
               </div>
-
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange(pagination.page + 1)}
                 disabled={!pagination.hasNext}
-                className="border-gray-200"
+                className="border-amber-200 hover:bg-amber-50"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -702,14 +428,17 @@ export default function ServicesPage() {
           </div>
         )}
 
-        {/* Purchase Modal */}
+        {/* Purchase Modal - Opens directly when service is clicked */}
         {selectedService && showPurchaseModal && (
           <IndoSMMPurchaseModal
             isOpen={showPurchaseModal}
-            onClose={() => setShowPurchaseModal(false)}
+            onClose={() => {
+              setShowPurchaseModal(false)
+              setSelectedService(null)
+            }}
             service={selectedService}
-            initialTarget={orderData.target}
-            initialQuantity={orderData.quantity}
+            initialTarget=""
+            initialQuantity={selectedService.min_order.toString()}
             userRole={user?.role}
           />
         )}
