@@ -344,13 +344,7 @@ export function ProductGrid({ limit = 8, category, featured = false }: ProductGr
                         </div>
                       )}
                     </div>
-                    {user?.role === "reseller" && (
-                      <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold px-2 py-1 sm:px-3 sm:py-2 shadow-md sm:shadow-lg text-xs sm:text-sm">
-                        <Shield className="h-2 w-2 sm:h-3 sm:w-3 lg:h-4 lg:w-4 mr-1" />
-                        <span className="hidden sm:inline">Hemat </span>
-                        {formatPrice(product.user_price - product.reseller_price)}
-                      </Badge>
-                    )}
+                   
                   </div>
                 </div>
 
