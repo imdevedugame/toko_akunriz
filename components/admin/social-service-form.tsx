@@ -266,7 +266,11 @@ export function SocialServiceForm({ isOpen, onClose, onSuccess, service, categor
                   required
                   className="border-blue-200"
                 />
-                <div className="text-xs text-blue-600 mt-1">Harga untuk user biasa</div>
+                <div className="text-xs text-blue-600 mt-1">
+                  {formData.service_mode === "custom"
+                    ? "Harga per 1000 untuk user biasa"
+                    : "Harga base untuk user biasa"}
+                </div>
               </div>
 
               <div>
@@ -284,7 +288,9 @@ export function SocialServiceForm({ isOpen, onClose, onSuccess, service, categor
                   required
                   className="border-blue-200"
                 />
-                <div className="text-xs text-blue-600 mt-1">Harga untuk reseller (biasanya lebih murah)</div>
+                <div className="text-xs text-blue-600 mt-1">
+                  {formData.service_mode === "custom" ? "Harga per 1000 untuk reseller" : "Harga base untuk reseller"}
+                </div>
               </div>
             </div>
             <div className="text-xs text-blue-700 bg-blue-100 p-2 rounded">

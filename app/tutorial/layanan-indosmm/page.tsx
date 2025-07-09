@@ -7,11 +7,11 @@ import { ArrowLeft, List, Edit, CreditCard, Send, BarChart3, AlertTriangle, Cloc
 const steps = [
   {
     number: 1,
-    title: "Pilih Layanan IndoSMM",
+    title: "Pilih Layanan Social Media",
     description: "Browse dan pilih layanan media sosial yang diinginkan",
     icon: List,
     details: [
-      "Kunjungi halaman layanan IndoSMM",
+      "Kunjungi halaman layanan Social Media",
       "Pilih platform (Instagram, YouTube, TikTok, dll)",
       "Lihat daftar layanan yang tersedia",
       "Bandingkan harga dan kualitas layanan",
@@ -55,31 +55,33 @@ const steps = [
   },
   {
     number: 5,
-    title: "Sistem Kirim ke IndoSMM",
-    description: "Order otomatis dikirim ke API IndoSMM setelah pembayaran sukses",
+    title: "Order Diproses",
+    description: "Order otomatis diproses setelah pembayaran sukses",
     icon: BarChart3,
     details: [
-      "Sistem otomatis mengirim order ke IndoSMM API",
+      "Sistem otomatis memproses order Anda",
       "Anda akan mendapat order ID untuk tracking",
-      'Notifikasi "Order berhasil dikirim" akan muncul',
-      "Order tersimpan di riwayat pembelian IndoSMM",
+      'Notifikasi "Order berhasil dibuat" akan muncul',
+      "Order tersimpan di riwayat pembelian Social Media",
     ],
   },
 ]
 
-export default function TutorialLayananIndoSMMPage() {
+export default function TutorialLayananSocialMediaPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex items-center mb-8">
-        <Button variant="outline" size="icon" asChild className="mr-4">
+        <Button variant="outline" size="icon" asChild className="mr-4 bg-transparent">
           <Link href="/tutorial">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Tutorial Layanan IndoSMM</h1>
-          <p className="text-gray-600 mt-2">Panduan lengkap cara memesan layanan IndoSMM untuk media sosial Anda</p>
+          <h1 className="text-3xl font-bold">Tutorial Layanan Social Media</h1>
+          <p className="text-gray-600 mt-2">
+            Panduan lengkap cara memesan layanan Social Media untuk media sosial Anda
+          </p>
         </div>
       </div>
 
@@ -162,19 +164,19 @@ export default function TutorialLayananIndoSMMPage() {
               <h3 className="font-semibold text-blue-800 mb-3">Status Order:</h3>
               <ul className="space-y-2 text-blue-700">
                 <li>
-                  • <strong>Pending:</strong> Order sedang diproses
+                  • <strong>Pending:</strong> Order sedang menunggu pembayaran
                 </li>
                 <li>
-                  • <strong>In Progress:</strong> Sedang dikerjakan
+                  • <strong>Processing:</strong> Order sedang diproses
                 </li>
                 <li>
                   • <strong>Completed:</strong> Order selesai
                 </li>
                 <li>
-                  • <strong>Partial:</strong> Sebagian selesai
+                  • <strong>Failed:</strong> Order gagal diproses
                 </li>
                 <li>
-                  • <strong>Canceled:</strong> Order dibatalkan
+                  • <strong>Cancelled:</strong> Order dibatalkan
                 </li>
               </ul>
             </div>
@@ -215,7 +217,7 @@ export default function TutorialLayananIndoSMMPage() {
             <div>
               <h3 className="font-semibold text-orange-800 mb-2">Setelah Memesan:</h3>
               <ul className="space-y-2 text-orange-700">
-                <li>• Cek status order secara berkala di riwayat IndoSMM</li>
+                <li>• Cek status order secara berkala di riwayat Social Media</li>
                 <li>• Jangan panic jika proses memakan waktu</li>
                 <li>• Hubungi support jika order stuck lebih dari 24 jam</li>
                 <li>• Simpan order ID untuk referensi</li>
@@ -231,7 +233,7 @@ export default function TutorialLayananIndoSMMPage() {
           <Link href="/tutorial/pembelian-akun">Tutorial Akun Premium</Link>
         </Button>
         <Button asChild>
-          <Link href="/services">Lihat Layanan IndoSMM</Link>
+          <Link href="/services">Lihat Layanan Social Media</Link>
         </Button>
       </div>
     </div>

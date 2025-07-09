@@ -11,21 +11,24 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { CalendarIcon, Download, Eye, Filter, Search, RefreshCw, Edit, CheckCircle, XCircle } from "lucide-react"
+  CalendarIcon,
+  Download,
+  Eye,
+  Filter,
+  Search,
+  RefreshCw,
+  ExternalLink,
+  Package,
+  Users,
+  Heart,
+  MessageCircle,
+  Play,
+  UserPlus,
+  Share2,
+} from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { cn } from "@/lib/utils"
-import { toast } from "@/hooks/use-toast"
 
 interface Order {
   id: number
@@ -33,18 +36,24 @@ interface Order {
   user_id: number
   user_name: string
   user_email: string
-  type: "premium" | "indosmm"
+  type: "product" | "indosmm" | "social"
   product_name?: string
   service_name?: string
+  category_name?: string
+  package_name?: string
+  service_type?: string
   quantity: number
   total_amount: number
   status: "pending" | "paid" | "processing" | "completed" | "failed" | "cancelled"
+  payment_status: "pending" | "paid" | "failed" | "expired"
   payment_method?: string
+  is_custom?: boolean
+  target_url?: string
+  whatsapp_number?: string
+  comments?: string
   created_at: string
   updated_at: string
   items?: any[]
-  indosmm_order_id?: string
-  indosmm_status?: string
 }
 
 const statusColors = {
@@ -56,30 +65,38 @@ const statusColors = {
   cancelled: "bg-gray-100 text-gray-800",
 }
 
-const typeColors = {
-  premium: "bg-indigo-100 text-indigo-800",
-  indosmm: "bg-orange-100 text-orange-800",
+const paymentStatusColors = {
+  pending: "bg-yellow-100 text-yellow-800",
+  paid: "bg-green-100 text-green-800",
+  failed: "bg-red-100 text-red-800",
+  expired: "bg-gray-100 text-gray-800",
 }
 
-const statusOptions = [
-  { value: "pending", label: "Pending", color: "bg-yellow-500" },
-  { value: "paid", label: "Paid", color: "bg-blue-500" },
-  { value: "processing", label: "Processing", color: "bg-purple-500" },
-  { value: "completed", label: "Completed", color: "bg-green-500" },
-  { value: "failed", label: "Failed", color: "bg-red-500" },
-  { value: "cancelled", label: "Cancelled", color: "bg-gray-500" },
-]
+const typeColors = {
+  product: "bg-indigo-100 text-indigo-800",
+  indosmm: "bg-orange-100 text-orange-800",
+  social: "bg-purple-100 text-purple-800",
+}
+
+const serviceTypeIcons = {
+  followers: Users,
+  likes: Heart,
+  comments: MessageCircle,
+  views: Play,
+  subscribers: UserPlus,
+  shares: Share2,
+}
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [dateFrom, setDateFrom] = useState<Date>()
   const [dateTo, setDateTo] = useState<Date>()
@@ -88,112 +105,68 @@ export default function AdminOrdersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20)
 
-  // Status update
-  const [statusUpdateOrder, setStatusUpdateOrder] = useState<Order | null>(null)
-  const [newStatus, setNewStatus] = useState<string>("")
-
   useEffect(() => {
     fetchOrders()
   }, [])
 
   useEffect(() => {
     filterOrders()
-  }, [orders, searchTerm, statusFilter, typeFilter, dateFrom, dateTo])
+  }, [orders, searchTerm, statusFilter, paymentStatusFilter, typeFilter, dateFrom, dateTo])
 
   const fetchOrders = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/admin/orders")
-      if (response.ok) {
-        const data = await response.json()
-        setOrders(data.orders)
+
+      // Fetch all order types
+      const [productRes, indosmmRes, socialRes] = await Promise.all([
+        fetch("/api/admin/orders"),
+        fetch("/api/admin/indosmm-orders"),
+        fetch("/api/admin/social-orders"),
+      ])
+
+      const allOrders: Order[] = []
+
+      // Process product orders
+      if (productRes.ok) {
+        const productData = await productRes.json()
+        const productOrders = productData.orders.map((order: any) => ({
+          ...order,
+          type: "product",
+          user_name: order.user_email.split("@")[0], // Extract name from email
+        }))
+        allOrders.push(...productOrders)
       }
+
+      // Process IndoSMM orders
+      if (indosmmRes.ok) {
+        const indosmmData = await indosmmRes.json()
+        const indosmmOrders = indosmmData.orders.map((order: any) => ({
+          ...order,
+          type: "indosmm",
+          user_name: order.user_email.split("@")[0],
+        }))
+        allOrders.push(...indosmmOrders)
+      }
+
+      // Process social media orders
+      if (socialRes.ok) {
+        const socialData = await socialRes.json()
+        const socialOrders = socialData.orders.map((order: any) => ({
+          ...order,
+          type: "social",
+          user_name: order.user_email.split("@")[0],
+        }))
+        allOrders.push(...socialOrders)
+      }
+
+      // Sort by created_at descending
+      allOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+      setOrders(allOrders)
     } catch (error) {
       console.error("Failed to fetch orders:", error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch orders",
-        variant: "destructive",
-      })
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const updateOrderStatus = async (orderId: number, status: string) => {
-    try {
-      setIsUpdatingStatus(true)
-      const response = await fetch(`/api/admin/orders/${orderId}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status }),
-      })
-
-      if (response.ok) {
-        const updatedOrder = await response.json()
-
-        // Update orders in state
-        setOrders((prevOrders) =>
-          prevOrders.map((order) =>
-            order.id === orderId ? { ...order, status: status as any, updated_at: new Date().toISOString() } : order,
-          ),
-        )
-
-        toast({
-          title: "Success",
-          description: `Order status updated to ${status}`,
-        })
-
-        setStatusUpdateOrder(null)
-        setNewStatus("")
-      } else {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to update status")
-      }
-    } catch (error) {
-      console.error("Failed to update order status:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update order status",
-        variant: "destructive",
-      })
-    } finally {
-      setIsUpdatingStatus(false)
-    }
-  }
-
-  const retryIndoSMMOrder = async (orderId: number) => {
-    try {
-      setIsUpdatingStatus(true)
-      const response = await fetch(`/api/admin/orders/${orderId}/retry-indosmm`, {
-        method: "POST",
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-
-        // Refresh orders
-        await fetchOrders()
-
-        toast({
-          title: "Success",
-          description: "IndoSMM order retry initiated",
-        })
-      } else {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to retry IndoSMM order")
-      }
-    } catch (error) {
-      console.error("Failed to retry IndoSMM order:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to retry IndoSMM order",
-        variant: "destructive",
-      })
-    } finally {
-      setIsUpdatingStatus(false)
     }
   }
 
@@ -208,13 +181,19 @@ export default function AdminOrdersPage() {
           order.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           order.user_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
           order.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          order.service_name?.toLowerCase().includes(searchTerm.toLowerCase()),
+          order.service_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.category_name?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     // Status filter
     if (statusFilter !== "all") {
       filtered = filtered.filter((order) => order.status === statusFilter)
+    }
+
+    // Payment status filter
+    if (paymentStatusFilter !== "all") {
+      filtered = filtered.filter((order) => order.payment_status === paymentStatusFilter)
     }
 
     // Type filter
@@ -236,7 +215,7 @@ export default function AdminOrdersPage() {
 
   const exportToCSV = () => {
     const csvContent = [
-      ["Order Number", "Customer", "Type", "Product/Service", "Amount", "Status", "Date"],
+      ["Order Number", "Customer", "Type", "Product/Service", "Amount", "Status", "Payment Status", "Date"],
       ...filteredOrders.map((order) => [
         order.order_number,
         order.user_name,
@@ -244,6 +223,7 @@ export default function AdminOrdersPage() {
         order.product_name || order.service_name || "-",
         order.total_amount,
         order.status,
+        order.payment_status,
         format(new Date(order.created_at), "dd/MM/yyyy HH:mm", { locale: id }),
       ]),
     ]
@@ -264,6 +244,11 @@ export default function AdminOrdersPage() {
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount)
+  }
+
+  const getServiceTypeIcon = (type: string) => {
+    const Icon = serviceTypeIcons[type as keyof typeof serviceTypeIcons] || Package
+    return <Icon className="h-4 w-4" />
   }
 
   // Pagination
@@ -304,7 +289,7 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Filters */}
-      <Card className="bg-white">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
@@ -312,25 +297,24 @@ export default function AdminOrdersPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search orders..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white"
+                className="pl-10"
               />
             </div>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-white">
+              <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent className="bg-white">
+              <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
@@ -338,14 +322,28 @@ export default function AdminOrdersPage() {
               </SelectContent>
             </Select>
 
+            <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Payment" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Payment</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="bg-white">
+              <SelectTrigger>
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
-              <SelectContent className="bg-white">
+              <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="premium">Premium Account</SelectItem>
-                <SelectItem value="indosmm">IndoSMM Service</SelectItem>
+                <SelectItem value="product">Product</SelectItem>
+                <SelectItem value="indosmm">IndoSMM</SelectItem>
+                <SelectItem value="social">Social Media</SelectItem>
               </SelectContent>
             </Select>
 
@@ -353,13 +351,13 @@ export default function AdminOrdersPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={cn("justify-start text-left font-normal bg-white", !dateFrom && "text-muted-foreground")}
+                  className={cn("justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "From Date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white">
+              <PopoverContent className="w-auto p-0">
                 <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus />
               </PopoverContent>
             </Popover>
@@ -368,13 +366,13 @@ export default function AdminOrdersPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={cn("justify-start text-left font-normal bg-white", !dateTo && "text-muted-foreground")}
+                  className={cn("justify-start text-left font-normal", !dateTo && "text-muted-foreground")}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {dateTo ? format(dateTo, "dd/MM/yyyy") : "To Date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white">
+              <PopoverContent className="w-auto p-0">
                 <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus />
               </PopoverContent>
             </Popover>
@@ -384,29 +382,25 @@ export default function AdminOrdersPage() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-white">
+        <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold">{filteredOrders.length}</div>
             <p className="text-xs text-muted-foreground">Total Orders</p>
           </CardContent>
         </Card>
-        <Card className="bg-white">
+        <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold">
               {formatCurrency(
-                filteredOrders.reduce(
-                  (sum, order) =>
-                    typeof order.total_amount === "number" && !isNaN(order.total_amount)
-                      ? sum + order.total_amount
-                      : sum,
-                  0,
-                ),
+                filteredOrders
+                  .filter((order) => order.payment_status === "paid")
+                  .reduce((sum, order) => sum + order.total_amount, 0),
               )}
             </div>
             <p className="text-xs text-muted-foreground">Total Revenue</p>
           </CardContent>
         </Card>
-        <Card className="bg-white">
+        <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold">
               {filteredOrders.filter((order) => order.status === "completed").length}
@@ -414,7 +408,7 @@ export default function AdminOrdersPage() {
             <p className="text-xs text-muted-foreground">Completed Orders</p>
           </CardContent>
         </Card>
-        <Card className="bg-white">
+        <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold">
               {filteredOrders.filter((order) => order.status === "pending").length}
@@ -425,7 +419,7 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Orders Table */}
-      <Card className="bg-white">
+      <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -436,13 +430,14 @@ export default function AdminOrdersPage() {
                 <TableHead>Product/Service</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Payment</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {currentOrders.map((order) => (
-                <TableRow key={order.id} className="bg-white">
+                <TableRow key={`${order.type}-${order.id}`}>
                   <TableCell className="font-medium">{order.order_number}</TableCell>
                   <TableCell>
                     <div>
@@ -451,10 +446,19 @@ export default function AdminOrdersPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={typeColors[order.type]}>{order.type === "premium" ? "Premium" : "IndoSMM"}</Badge>
+                    <Badge className={typeColors[order.type]}>
+                      {order.type === "product" ? "Product" : order.type === "indosmm" ? "IndoSMM" : "Social"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="max-w-[200px] truncate">{order.product_name || order.service_name || "-"}</div>
+                    <div className="max-w-[200px]">
+                      <div className="truncate flex items-center gap-2">
+                        {order.type === "social" && order.service_type && getServiceTypeIcon(order.service_type)}
+                        {order.product_name || order.service_name || "-"}
+                      </div>
+                      {order.package_name && <div className="text-xs text-gray-500">Package: {order.package_name}</div>}
+                      {order.category_name && <div className="text-xs text-gray-500">{order.category_name}</div>}
+                    </div>
                   </TableCell>
                   <TableCell>{formatCurrency(order.total_amount)}</TableCell>
                   <TableCell>
@@ -462,214 +466,171 @@ export default function AdminOrdersPage() {
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </Badge>
                   </TableCell>
+                 <TableCell>
+  <Badge className={paymentStatusColors[order.payment_status || "pending"]}>
+    {(order.payment_status || "pending")
+      .charAt(0)
+      .toUpperCase() + (order.payment_status || "pending").slice(1)}
+  </Badge>
+</TableCell>
+
                   <TableCell>{format(new Date(order.created_at), "dd/MM/yyyy HH:mm", { locale: id })}</TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      {/* View Order Details */}
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(order)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl bg-white">
-                          <DialogHeader>
-                            <DialogTitle>Order Details - {order.order_number}</DialogTitle>
-                          </DialogHeader>
-                          {selectedOrder && (
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(order)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl bg-white">
+                        <DialogHeader>
+                          <DialogTitle>Order Details - {order.order_number}</DialogTitle>
+                        </DialogHeader>
+                        {selectedOrder && (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-sm font-medium">Customer</label>
+                                <p>{selectedOrder.user_name}</p>
+                                <p className="text-sm text-gray-500">{selectedOrder.user_email}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium">Order Type</label>
                                 <div>
-                                  <label className="text-sm font-medium">Customer</label>
-                                  <p>{selectedOrder.user_name}</p>
-                                  <p className="text-sm text-gray-500">{selectedOrder.user_email}</p>
-                                </div>
-                                <div>
-                                  <label className="text-sm font-medium">Order Type</label>
-                                  <p>
-                                    <Badge className={typeColors[selectedOrder.type]}>
-                                      {selectedOrder.type === "premium" ? "Premium Account" : "IndoSMM Service"}
-                                    </Badge>
-                                  </p>
-                                </div>
-                                <div>
-                                  <label className="text-sm font-medium">Status</label>
-                                  <p>
-                                    <Badge className={statusColors[selectedOrder.status]}>
-                                      {selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
-                                    </Badge>
-                                  </p>
-                                </div>
-                                <div>
-                                  <label className="text-sm font-medium">Total Amount</label>
-                                  <p className="text-lg font-bold">{formatCurrency(selectedOrder.total_amount)}</p>
-                                </div>
-                                <div>
-                                  <label className="text-sm font-medium">Created</label>
-                                  <p>
-                                    {format(new Date(selectedOrder.created_at), "dd MMMM yyyy, HH:mm", { locale: id })}
-                                  </p>
-                                </div>
-                                <div>
-                                  <label className="text-sm font-medium">Updated</label>
-                                  <p>
-                                    {format(new Date(selectedOrder.updated_at), "dd MMMM yyyy, HH:mm", { locale: id })}
-                                  </p>
+                                  <Badge className={typeColors[selectedOrder.type]}>
+                                    {selectedOrder.type === "product"
+                                      ? "Product"
+                                      : selectedOrder.type === "indosmm"
+                                        ? "IndoSMM Service"
+                                        : "Social Media"}
+                                  </Badge>
                                 </div>
                               </div>
+                              <div>
+                                <label className="text-sm font-medium">Status</label>
+                                <div>
+                                  <Badge className={statusColors[selectedOrder.status]}>
+                                    {selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium">Payment Status</label>
+                                <div>
+                                 {selectedOrder.payment_status && (
+  <Badge className={paymentStatusColors[selectedOrder.payment_status]}>
+    {selectedOrder.payment_status.charAt(0).toUpperCase() +
+      selectedOrder.payment_status.slice(1)}
+  </Badge>
+)}
 
-                              {/* IndoSMM Order Info */}
-                              {selectedOrder.type === "indosmm" && (
-                                <div className="grid grid-cols-2 gap-4 p-4 bg-orange-50 rounded-lg">
+                                </div>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium">Quantity</label>
+                              <p>{selectedOrder.quantity != null ? selectedOrder.quantity.toLocaleString() : "-"}</p>
+
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium">Total Amount</label>
+                                <p className="text-lg font-bold">{formatCurrency(selectedOrder.total_amount)}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium">Created</label>
+                                <p>
+                                  {format(new Date(selectedOrder.created_at), "dd MMMM yyyy, HH:mm", { locale: id })}
+                                </p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium">Updated</label>
+                                <p>
+                                  {format(new Date(selectedOrder.updated_at), "dd MMMM yyyy, HH:mm", { locale: id })}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Social Media specific fields */}
+                            {selectedOrder.type === "social" && (
+                              <>
+                                <div className="grid grid-cols-2 gap-4">
                                   <div>
-                                    <label className="text-sm font-medium">IndoSMM Order ID</label>
-                                    <p className="font-mono text-sm">
-                                      {selectedOrder.indosmm_order_id || "Not assigned"}
+                                    <label className="text-sm font-medium">Category</label>
+                                    <p>{selectedOrder.category_name}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">Service Type</label>
+                                    <p className="flex items-center gap-2">
+                                      {selectedOrder.service_type && getServiceTypeIcon(selectedOrder.service_type)}
+                                      {selectedOrder.service_type}
                                     </p>
                                   </div>
+                                  {selectedOrder.package_name && (
+                                    <div>
+                                      <label className="text-sm font-medium">Package</label>
+                                      <p>{selectedOrder.package_name}</p>
+                                    </div>
+                                  )}
                                   <div>
-                                    <label className="text-sm font-medium">IndoSMM Status</label>
-                                    <p>{selectedOrder.indosmm_status || "Unknown"}</p>
+                                    <label className="text-sm font-medium">Order Type</label>
+                                    <div>
+                                      <Badge variant={selectedOrder.is_custom ? "outline" : "default"}>
+                                        {selectedOrder.is_custom ? "Custom" : "Package"}
+                                      </Badge>
+                                    </div>
                                   </div>
                                 </div>
-                              )}
-
-                              {selectedOrder.items && selectedOrder.items.length > 0 && (
-                                <div>
-                                  <label className="text-sm font-medium">Order Items</label>
-                                  <div className="mt-2 space-y-2">
-                                    {selectedOrder.items.map((item: any, index: number) => (
-                                      <div key={index} className="p-3 border rounded-lg bg-white">
-                                        <div className="flex justify-between">
-                                          <span>{item.product_name || item.service_name}</span>
-                                          <span>{formatCurrency(item.price)}</span>
-                                        </div>
-                                        <div className="text-sm text-gray-500">Quantity: {item.quantity}</div>
-                                      </div>
-                                    ))}
+                                {selectedOrder.target_url && (
+                                  <div>
+                                    <label className="text-sm font-medium">Target URL</label>
+                                    <p className="truncate max-w-xs">
+                                      <a
+                                        href={selectedOrder.target_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:underline flex items-center gap-1"
+                                      >
+                                        {selectedOrder.target_url}
+                                        <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                    </p>
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </DialogContent>
-                      </Dialog>
+                                )}
+                                {selectedOrder.whatsapp_number && (
+                                  <div>
+                                    <label className="text-sm font-medium">WhatsApp</label>
+                                    <p>{selectedOrder.whatsapp_number}</p>
+                                  </div>
+                                )}
+                                {selectedOrder.comments && (
+                                  <div>
+                                    <label className="text-sm font-medium">Comments</label>
+                                    <p className="text-sm bg-gray-50 p-2 rounded">{selectedOrder.comments}</p>
+                                  </div>
+                                )}
+                              </>
+                            )}
 
-                      {/* Update Status */}
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setStatusUpdateOrder(order)
-                              setNewStatus(order.status)
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-white">
-                          <DialogHeader>
-                            <DialogTitle>Update Order Status</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <label className="text-sm font-medium">Order: {statusUpdateOrder?.order_number}</label>
-                              <p className="text-sm text-gray-500">Customer: {statusUpdateOrder?.user_name}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium mb-2 block">New Status</label>
-                              <Select value={newStatus} onValueChange={setNewStatus}>
-                                <SelectTrigger className="bg-white">
-                                  <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white">
-                                  {statusOptions.map((status) => (
-                                    <SelectItem key={status.value} value={status.value}>
-                                      <div className="flex items-center gap-2">
-                                        <div className={`w-3 h-3 rounded-full ${status.color}`}></div>
-                                        {status.label}
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="flex gap-2 justify-end">
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setStatusUpdateOrder(null)
-                                  setNewStatus("")
-                                }}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                onClick={() => statusUpdateOrder && updateOrderStatus(statusUpdateOrder.id, newStatus)}
-                                disabled={isUpdatingStatus || !newStatus || newStatus === statusUpdateOrder?.status}
-                              >
-                                {isUpdatingStatus ? "Updating..." : "Update Status"}
-                              </Button>
-                            </div>
+                            {/* IndoSMM specific fields */}
+                            {selectedOrder.type === "indosmm" && selectedOrder.target_url && (
+                              <div>
+                                <label className="text-sm font-medium">Target URL</label>
+                                <p className="truncate max-w-xs">
+                                  <a
+                                    href={selectedOrder.target_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline flex items-center gap-1"
+                                  >
+                                    {selectedOrder.target_url}
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </p>
+                              </div>
+                            )}
                           </div>
-                        </DialogContent>
-                      </Dialog>
-
-                      {/* Retry IndoSMM Order (only for failed IndoSMM orders) */}
-                      {order.type === "indosmm" && (order.status === "failed" || order.status === "paid") && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" title="Retry IndoSMM Order">
-                              <RefreshCw className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="bg-white">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Retry IndoSMM Order</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will retry sending the order to IndoSMM API. Are you sure you want to continue?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => retryIndoSMMOrder(order.id)}
-                                disabled={isUpdatingStatus}
-                              >
-                                {isUpdatingStatus ? "Retrying..." : "Retry Order"}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-
-                      {/* Quick Status Actions */}
-                      {order.status === "processing" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => updateOrderStatus(order.id, "completed")}
-                          disabled={isUpdatingStatus}
-                          title="Mark as Completed"
-                        >
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                        </Button>
-                      )}
-
-                      {(order.status === "pending" || order.status === "paid") && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => updateOrderStatus(order.id, "cancelled")}
-                          disabled={isUpdatingStatus}
-                          title="Cancel Order"
-                        >
-                          <XCircle className="h-4 w-4 text-red-600" />
-                        </Button>
-                      )}
-                    </div>
+                        )}
+                      </DialogContent>
+                    </Dialog>
                   </TableCell>
                 </TableRow>
               ))}
