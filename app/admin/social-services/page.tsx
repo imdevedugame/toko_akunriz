@@ -233,7 +233,7 @@ export default function SocialServicesPage() {
               <SelectTrigger className="w-full lg:w-48">
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id.toString()}>
@@ -247,7 +247,7 @@ export default function SocialServicesPage() {
               <SelectTrigger className="w-full lg:w-48">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Types</SelectItem>
                 {Object.entries(serviceTypeLabels).map(([key, label]) => (
                   <SelectItem key={key} value={key}>
@@ -261,7 +261,7 @@ export default function SocialServicesPage() {
               <SelectTrigger className="w-full lg:w-48">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>

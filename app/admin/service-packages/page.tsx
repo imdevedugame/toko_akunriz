@@ -213,7 +213,7 @@ export default function ServicePackagesPage() {
               <SelectTrigger className="w-64">
                 <SelectValue placeholder="Filter by service" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Services</SelectItem>
                 {services.map((service) => (
                   <SelectItem key={service.id} value={service.id.toString()}>

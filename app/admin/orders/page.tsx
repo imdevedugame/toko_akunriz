@@ -312,7 +312,7 @@ export default function AdminOrdersPage() {
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
@@ -326,7 +326,7 @@ export default function AdminOrdersPage() {
               <SelectTrigger>
                 <SelectValue placeholder="Payment" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Payment</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
@@ -339,7 +339,7 @@ export default function AdminOrdersPage() {
               <SelectTrigger>
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="product">Product</SelectItem>
                 <SelectItem value="indosmm">IndoSMM</SelectItem>

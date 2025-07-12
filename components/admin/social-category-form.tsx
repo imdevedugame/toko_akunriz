@@ -230,7 +230,7 @@ export function SocialCategoryForm({ isOpen, onClose, onSuccess, category }: Soc
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>

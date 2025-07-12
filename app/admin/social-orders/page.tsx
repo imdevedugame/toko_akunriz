@@ -549,7 +549,7 @@ export default function SocialOrdersPage() {
               <SelectTrigger>
                 <SelectValue placeholder="Service Type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Services</SelectItem>
                 <SelectItem value="followers">Followers</SelectItem>
                 <SelectItem value="likes">Likes</SelectItem>
@@ -563,7 +563,7 @@ export default function SocialOrdersPage() {
               <SelectTrigger>
                 <SelectValue placeholder="Order Status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
@@ -576,7 +576,7 @@ export default function SocialOrdersPage() {
               <SelectTrigger>
                 <SelectValue placeholder="Payment Status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Payments</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
@@ -639,7 +639,7 @@ export default function SocialOrdersPage() {
                         <SelectTrigger className="w-[120px]">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           <SelectItem value="pending">Pending</SelectItem>
                           <SelectItem value="processing">Processing</SelectItem>
                           <SelectItem value="completed">Completed</SelectItem>

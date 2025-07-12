@@ -1,3 +1,4 @@
+
 import { type NextRequest, NextResponse } from "next/server"
 import { indoSMMService } from "@/lib/indosmm"
 import db from "@/lib/db"
@@ -9,6 +10,8 @@ export async function POST(request: NextRequest) {
 
     const { id, status, external_id, amount } = body
 
+    console.log("📦 Webhook data:", { id, status, external_id, amount })
+
     if (!external_id) {
       console.log("❌ No external_id in webhook")
       return NextResponse.json({ error: "No external_id provided" }, { status: 400 })
@@ -16,29 +19,37 @@ export async function POST(request: NextRequest) {
 
     const [orderResult] = await db.execute("SELECT * FROM orders WHERE order_number = ?", [external_id])
     if (!Array.isArray(orderResult) || orderResult.length === 0) {
-      console.log(`❌ Order not found: ${external_id}`)
+      console.log(`❌ Order not found for external_id: ${external_id}`)
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
     }
 
     const order = orderResult[0] as any
-    console.log(`📋 Processing webhook for order: ${order.order_number}, current status: ${order.status}`)
+    console.log(`📋 Order found: ${order.order_number}, Current status: ${order.status}, Type: ${order.type}`)
 
-    if (status === "PAID" && order.status !== "completed") {
+    // Handle PAID or COMPLETED
+    if ((status === "PAID" || status === "COMPLETED") && order.status !== "completed") {
       console.log(`💰 Payment successful for order: ${order.order_number}`)
 
       await db.execute("UPDATE orders SET status = 'paid', updated_at = NOW() WHERE id = ?", [order.id])
+      console.log(`✅ Order status updated to 'paid': ${order.order_number}`)
 
       if (order.type === "indosmm_service") {
-        console.log(`🚀 Processing IndoSMM order: ${order.order_number}`)
+        console.log(`🚀 IndoSMM service order detected`)
         await processIndoSMMOrder(order.id)
-      } else if (order.type === "premium") {
-        console.log(`👑 Processing Premium order: ${order.order_number}`)
-        await db.execute("UPDATE orders SET status = 'completed', updated_at = NOW() WHERE id = ?", [order.id])
-        console.log(`✅ Premium order ${order.order_number} marked as completed`)
+      } else if (order.type === "premium_account") {
+        console.log(`👑 Premium account order detected`)
+        await processPremiumAccountOrder(order.id)
+      } else {
+        console.warn(`⚠️ Unknown order type: ${order.type}`)
       }
-    } else if (status === "FAILED" || status === "EXPIRED") {
-      console.log(`❌ Payment failed/expired for order: ${order.order_number}`)
+    }
+
+    // Handle failed or expired
+    else if (status === "FAILED" || status === "EXPIRED") {
+      console.log(`❌ Payment failed or expired for order: ${order.order_number}`)
       await db.execute("UPDATE orders SET status = 'failed', updated_at = NOW() WHERE id = ?", [order.id])
+    } else {
+      console.log(`ℹ️ No action taken. Status: ${status}, Current order status: ${order.status}`)
     }
 
     return NextResponse.json({ success: true })
@@ -47,6 +58,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 })
   }
 }
+
+
 
 async function processIndoSMMOrder(orderId: number) {
   try {
@@ -137,55 +150,54 @@ async function processIndoSMMOrder(orderId: number) {
     throw error
   }
 }
-
-
 async function processPremiumAccountOrder(orderId: number) {
   try {
     console.log("🔐 Processing premium account order:", orderId)
 
-    // Get order items
-    const [itemRows] = await db.execute("SELECT * FROM order_items WHERE order_id = ?", [orderId])
+    const [items] = await db.execute(
+      "SELECT * FROM order_premium_items WHERE order_id = ?",
+      [orderId]
+    )
 
-    const items = itemRows as any[]
-    for (const item of items) {
-      // Find available account
+    const itemList = items as any[]
+
+    if (itemList.length === 0) {
+      console.error("❌ No order items found for premium_account")
+      await db.execute("UPDATE orders SET status = 'failed', updated_at = NOW() WHERE id = ?", [orderId])
+      return
+    }
+
+    for (const item of itemList) {
+      console.log(`🔍 Processing item: ${item.product_id}`)
+
       const [accountRows] = await db.execute(
         "SELECT * FROM premium_accounts WHERE product_id = ? AND status = 'available' LIMIT 1",
-        [item.product_id],
+        [item.product_id]
       )
 
       const accounts = accountRows as any[]
-      if (accounts.length > 0) {
-        const account = accounts[0]
-
-        // Assign account to order
-        await db.execute("UPDATE premium_accounts SET status = 'sold', order_id = ?, updated_at = NOW() WHERE id = ?", [
-          orderId,
-          account.id,
-        ])
-
-        console.log("✅ Premium account assigned:", {
-          accountId: account.id,
-          productId: item.product_id,
-        })
-      } else {
-        console.error("❌ No available accounts for product:", item.product_id)
-
-        // Update order status to failed
+      if (accounts.length === 0) {
+        console.error(`❌ No available premium accounts for product: ${item.product_id}`)
         await db.execute("UPDATE orders SET status = 'failed', updated_at = NOW() WHERE id = ?", [orderId])
         return
       }
+
+      const account = accounts[0]
+      console.log(`✅ Assigning premium account ID: ${account.id} to order`)
+
+      await db.execute(
+        `UPDATE premium_accounts 
+         SET status = 'sold', order_id = ?, updated_at = NOW() 
+         WHERE id = ?`,
+        [orderId, account.id]
+      )
     }
 
-    // Update order status to completed
     await db.execute("UPDATE orders SET status = 'completed', updated_at = NOW() WHERE id = ?", [orderId])
-
-    console.log("✅ Premium account order completed")
+    console.log("✅ Premium account order marked as completed")
   } catch (error) {
     console.error("💥 Premium account order processing failed:", error)
-
     await db.execute("UPDATE orders SET status = 'failed', updated_at = NOW() WHERE id = ?", [orderId])
-
-    throw error
   }
 }
+

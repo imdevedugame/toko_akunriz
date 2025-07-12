@@ -122,7 +122,7 @@ export function ServicePackageForm({ package: pkg, services, onSuccess, onCancel
           <SelectTrigger>
             <SelectValue placeholder="Select service" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white">
             {packageServices.map((service) => (
               <SelectItem key={service.id} value={service.id.toString()}>
                 {service.name} ({service.category_name})
@@ -224,7 +224,7 @@ export function ServicePackageForm({ package: pkg, services, onSuccess, onCancel
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white">
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="inactive">Inactive</SelectItem>
           </SelectContent>

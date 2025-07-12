@@ -262,12 +262,12 @@ export function MobileAdminSidebar() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
+      <SheetTrigger asChild >
         <Button variant="ghost" size="sm" className="lg:hidden p-2 h-9 w-9" aria-label="Toggle menu">
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="p-0 w-64">
+      <SheetContent side="left" className="p-0 w-64 bg-white">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
           <Button

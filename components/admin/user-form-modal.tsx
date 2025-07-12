@@ -189,7 +189,7 @@ export function UserFormModal({ isOpen, onClose, onSuccess, user }: UserFormModa
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="user">User</SelectItem>
                   <SelectItem value="reseller">Reseller</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
@@ -202,7 +202,7 @@ export function UserFormModal({ isOpen, onClose, onSuccess, user }: UserFormModa
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="suspended">Suspended</SelectItem>
                 </SelectContent>
