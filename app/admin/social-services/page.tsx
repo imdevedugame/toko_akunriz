@@ -16,6 +16,7 @@ interface SocialService {
   id: number
   category_id: number
   name: string
+  category_slug: string
   description: string
   service_type: string
   price_user: number
