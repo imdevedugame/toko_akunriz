@@ -57,7 +57,7 @@ export function HeroSection() {
 
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4">
-                 <Link href="/product" passHref>
+                 <Link href="/products" passHref>
   <Button
     size="lg"
     className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
@@ -67,7 +67,7 @@ export function HeroSection() {
   </Button>
 </Link>
 
-<Link href="/service" passHref>
+<Link href="/services" passHref>
   <Button
     size="lg"
     variant="outline"
