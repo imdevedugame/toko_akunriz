@@ -231,7 +231,7 @@ export default function AdminCategoriesPage() {
 
       {/* Edit Category Modal */}
       <Dialog open={!!editingCategory} onOpenChange={() => setEditingCategory(null)}>
-        <DialogContent>
+        <DialogContent className="bg-white">
           <DialogHeader>
             <DialogTitle>Edit Category</DialogTitle>
             <DialogDescription>Update the category information.</DialogDescription>
