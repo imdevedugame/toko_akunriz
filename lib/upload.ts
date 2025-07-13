@@ -1,5 +1,7 @@
-import { writeFile, mkdir } from "fs/promises"
+import { mkdir, stat } from "fs/promises"
+import { createWriteStream } from "fs"
 import { join } from "path"
+import { Readable } from "stream"
 import type { NextRequest } from "next/server"
 
 export async function uploadFiles(request: NextRequest, maxFiles = 5): Promise<string[]> {
@@ -12,22 +14,26 @@ export async function uploadFiles(request: NextRequest, maxFiles = 5): Promise<s
     }
 
     const uploadDir = join(process.cwd(), "public", "uploads")
-    await mkdir(uploadDir, { recursive: true })
+
+    await stat(uploadDir).catch(() => mkdir(uploadDir, { recursive: true }))
 
     const uploadedFiles: string[] = []
 
     for (const file of files) {
       if (file.size === 0) continue
 
-      const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-
-      // Generate unique filename
       const timestamp = Date.now()
-      const filename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "")}`
+      const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g, "")
+      const filename = `${timestamp}-${sanitized}`
       const filepath = join(uploadDir, filename)
 
-      await writeFile(filepath, buffer)
+      const stream = createWriteStream(filepath)
+      const buffer = Buffer.from(await file.arrayBuffer()) // kamu boleh ganti ini kalau tetap error
+
+      await new Promise<void>((resolve, reject) => {
+        Readable.from(buffer).pipe(stream).on("finish", resolve).on("error", reject)
+      })
+
       uploadedFiles.push(`/uploads/${filename}`)
     }
 
