@@ -12,10 +12,12 @@ export async function GET(_: unknown, context: { params: Promise<{ id: string }>
         p.*,
         c.name as category_name,
         c.slug as category_slug,
-        GROUP_CONCAT(pi.image_url ORDER BY pi.sort_order) as images
+        GROUP_CONCAT(pi.image_url ORDER BY pi.sort_order) as images,
+        COUNT(a.id) AS stock
       FROM premium_products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_images pi ON p.id = pi.product_id
+      LEFT JOIN premium_accounts a ON a.product_id = p.id AND a.status = 'available'
       WHERE p.id = ? AND p.status = 'active'
       GROUP BY p.id`,
       [id],
@@ -59,15 +61,15 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     const { params } = context
     const { id } = await params
 
-    const { name, slug, description, category_id, user_price, reseller_price, stock, features, tips, images } =
+    const { name, slug, description, category_id, user_price, reseller_price, features, tips, images, status } =
       await request.json()
 
-    // Update product
+    // Update product tanpa kolom stock (stock dihitung otomatis)
     await db.execute(
       `UPDATE premium_products 
        SET name = ?, slug = ?, description = ?, category_id = ?, 
-           user_price = ?, reseller_price = ?, stock = ?, 
-           features = ?, tips = ?, updated_at = CURRENT_TIMESTAMP
+           user_price = ?, reseller_price = ?, 
+           features = ?, tips = ?, status = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [
         name,
@@ -76,19 +78,16 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         category_id,
         user_price,
         reseller_price,
-        stock,
-        JSON.stringify(features),
-        JSON.stringify(tips),
+        JSON.stringify(features || []),
+        JSON.stringify(tips || []),
+        status || "active",
         id,
       ],
     )
 
-    // Update images if provided
-    if (images) {
-      // Delete existing images
+    // Update images jika ada
+    if (images && Array.isArray(images)) {
       await db.execute("DELETE FROM product_images WHERE product_id = ?", [id])
-
-      // Insert new images
       for (let i = 0; i < images.length; i++) {
         await db.execute("INSERT INTO product_images (product_id, image_url, sort_order) VALUES (?, ?, ?)", [
           id,
@@ -115,6 +114,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     const { params } = context
     const { id } = await params
 
+    // Soft delete: set status jadi inactive
     await db.execute('UPDATE premium_products SET status = "inactive" WHERE id = ?', [id])
 
     return NextResponse.json({ message: "Product deleted successfully" })

@@ -51,11 +51,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { product_id, email, password } = await request.json()
+   const { product_id, email, password, description } = await request.json()
 
-    if (!product_id || !email || !password) {
-      return NextResponse.json({ error: "All fields are required" }, { status: 400 })
-    }
+if (!product_id || !email || !password) {
+  return NextResponse.json({ error: "All fields are required" }, { status: 400 })
+}
+
 
     // Check if account already exists
     const [existingRows] = await db.execute("SELECT id FROM premium_accounts WHERE email = ? AND product_id = ?", [
@@ -66,12 +67,14 @@ export async function POST(request: NextRequest) {
     if ((existingRows as any[]).length > 0) {
       return NextResponse.json({ error: "Account already exists for this product" }, { status: 409 })
     }
+if (description && description.length > 1000) {
+  return NextResponse.json({ error: "Description too long" }, { status: 400 })
+}
 
-    const [result] = await db.execute("INSERT INTO premium_accounts (product_id, email, password) VALUES (?, ?, ?)", [
-      product_id,
-      email,
-      password,
-    ])
+   const [result] = await db.execute(
+  "INSERT INTO premium_accounts (product_id, email, password, description) VALUES (?, ?, ?, ?)",
+  [product_id, email, password, description || null]
+)
 
     // Update product stock
     await db.execute("UPDATE premium_products SET stock = stock + 1 WHERE id = ?", [product_id])

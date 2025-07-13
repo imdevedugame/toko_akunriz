@@ -32,6 +32,7 @@ interface OrderDetails {
     product_name: string
     account_email: string
     account_password: string
+    account_description?: string
   }>
 }
 
@@ -94,10 +95,9 @@ export default function PaymentSuccessPage() {
     if (!order?.premium_accounts) return
 
     const content = order.premium_accounts
-      .map(
-        (account) =>
-          `Product: ${account.product_name}\nEmail: ${account.account_email}\nPassword: ${account.account_password}\n\n`,
-      )
+     .map((account, index) =>
+    `Product: ${account.product_name}\nEmail: ${account.account_email}\nPassword: ${account.account_password}\nDescription: ${account.account_description || "Tidak ada"}\n\n`
+  )
       .join("")
 
     const blob = new Blob([content], { type: "text/plain" })
@@ -244,6 +244,19 @@ export default function PaymentSuccessPage() {
                         </Button>
                       </div>
                     </div>
+                   
+                      <div>
+                        <label className="text-xs sm:text-sm font-medium text-gray-600">Deskripsi</label>
+                       <textarea
+  readOnly
+  className="w-full text-xs sm:text-sm text-gray-700 mt-1 bg-white border rounded p-2 resize-none"
+  rows={3}
+  value={account.account_description || "Tidak ada deskripsi"}
+></textarea>
+
+
+                      </div>
+                   
                   </div>
                 </div>
               ))}

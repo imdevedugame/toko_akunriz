@@ -225,7 +225,7 @@ export default function ServicesPage() {
                     <SelectTrigger className="w-full md:w-48 border-amber-200 focus:border-amber-500 focus:ring-amber-500">
                       <SelectValue placeholder="Pilih Platform" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       <SelectItem value="all">Semua Platform</SelectItem>
                       {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id.toString()}>
@@ -238,7 +238,7 @@ export default function ServicesPage() {
                     <SelectTrigger className="w-full md:w-48 border-amber-200 focus:border-amber-500 focus:ring-amber-500">
                       <SelectValue placeholder="Jenis Layanan" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       <SelectItem value="all">Semua Jenis</SelectItem>
                       {Object.entries(serviceTypeLabels).map(([key, label]) => (
                         <SelectItem key={key} value={key}>
@@ -251,7 +251,7 @@ export default function ServicesPage() {
                     <SelectTrigger className="w-full md:w-48 border-amber-200 focus:border-amber-500 focus:ring-amber-500">
                       <SelectValue placeholder="Mode Layanan" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       <SelectItem value="all">Semua Mode</SelectItem>
                       <SelectItem value="package">Paket</SelectItem>
                       <SelectItem value="custom">Custom</SelectItem>

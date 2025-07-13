@@ -15,10 +15,12 @@ export async function GET(request: NextRequest) {
         p.*,
         c.name AS category_name,
         c.slug AS category_slug,
-        GROUP_CONCAT(pi.image_url ORDER BY pi.sort_order) AS images
+        GROUP_CONCAT(pi.image_url ORDER BY pi.sort_order) AS images,
+        COUNT(a.id) AS stock
       FROM premium_products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_images pi ON p.id = pi.product_id
+      LEFT JOIN premium_accounts a ON a.product_id = p.id AND a.status = 'available'
       WHERE p.status = 'active'
     `
     const params: any[] = []
@@ -39,8 +41,7 @@ export async function GET(request: NextRequest) {
 
     query += ` GROUP BY p.id ORDER BY p.created_at DESC LIMIT ${limit} OFFSET ${offset}`
 
-    console.log("Query:", query)
-    console.log("Params:", params)
+   
 
     const [rows] = await db.execute(query, params)
 
@@ -74,8 +75,6 @@ export async function GET(request: NextRequest) {
       countParams.push(`%${search}%`, `%${search}%`)
     }
 
-    console.log("Count Query:", countQuery)
-    console.log("Count Params:", countParams)
 
     const [countRows] = await db.execute(countQuery, countParams)
     const total = (countRows as any[])[0]?.total || 0
@@ -100,13 +99,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function parseSafeJSON(jsonStr: string | null | undefined) {
-  try {
-    return jsonStr ? JSON.parse(jsonStr) : []
-  } catch (e) {
-    console.warn("⚠️ Gagal parse JSON:", jsonStr)
-    return []
+// Fungsi parseSafeJSON sudah aman, bisa terima string atau object
+function parseSafeJSON(value: any) {
+  if (!value) return []
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value)
+    } catch {
+      return []
+    }
   }
+  if (typeof value === "object") {
+    return value
+  }
+  return []
 }
 
 export async function POST(request: NextRequest) {
@@ -200,4 +206,3 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
-
