@@ -1,9 +1,9 @@
 "use client"
-
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shield, Zap, Users, CheckCircle, TrendingUp, Lock, Gem, ShoppingCart, BookOpen } from "lucide-react"
+import { Shield, Zap, Users, CheckCircle, TrendingUp, Lock, Gem, AppWindow, LayoutGrid } from "lucide-react"
 
 export function HeroSection() {
   return (
@@ -46,7 +46,7 @@ export function HeroSection() {
                     <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
                       Pusat Premium Aplikasi &{" "}
                     </span>
-                    <span className="text-black">Layanan Social Media Injection</span>
+                    <span className="text-black">Layanan Social Media Service</span>
                   </h1>
                   <p className="text-xl text-gray-600 leading-relaxed">
                     Nikmati Akses Layanan Premium Aplikasi & Suntik Sosial Media Berkualitas Tinggi dengan Harga
@@ -57,21 +57,26 @@ export function HeroSection() {
 
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button
-                    size="lg"
-                    className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-                  >
-                    <ShoppingCart className="h-5 w-5 mr-2" />
-                    Belanja Sekarang
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-2 border-gray-300 hover:border-amber-600 hover:text-amber-600 px-8 py-3 text-lg font-semibold bg-transparent transition-all transform hover:scale-105"
-                  >
-                    <BookOpen className="h-5 w-5 mr-2" />
-                    Lihat Katalog
-                  </Button>
+                 <Link href="/product" passHref>
+  <Button
+    size="lg"
+    className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+  >
+   <AppWindow className="h-5 w-5 mr-2" />
+    Premium Aplikasi
+  </Button>
+</Link>
+
+<Link href="/service" passHref>
+  <Button
+    size="lg"
+    variant="outline"
+    className="border-2 border-gray-300 hover:border-amber-600 hover:text-amber-600 px-8 py-3 text-lg font-semibold bg-transparent transition-all transform hover:scale-105"
+  >
+   <LayoutGrid className="h-5 w-5 mr-2" />
+    Social Media Service
+  </Button>
+</Link>
                 </div>
 
                 {/* Trust Indicators */}

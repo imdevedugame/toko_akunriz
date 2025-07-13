@@ -24,8 +24,8 @@ export default function Navbar() {
 
   const navigation = [
     { name: "Beranda", href: "/" },
-    { name: "Produk", href: "/products" },
-    { name: "Layanan", href: "/services" },
+    { name: "premium Aplikasi", href: "/products" },
+    { name: "Social Media", href: "/services" },
     { name: "Tutorial", href: "/tutorial" },
     { name: "Tentang", href: "/about" },
     { name: "Kontak", href: "/contact" },
