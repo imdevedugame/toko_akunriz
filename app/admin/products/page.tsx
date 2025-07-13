@@ -35,6 +35,7 @@ interface Product {
   features: string[]
   tips: string[]
   created_at: string
+  category_id: number
 }
 
 export default function AdminProductsPage() {
