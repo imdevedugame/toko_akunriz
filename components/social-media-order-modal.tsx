@@ -54,6 +54,8 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
     description: "",
   })
 
+  const [phoneError, setPhoneError] = useState("") // ✅ Tambahkan state untuk error nomor WA
+
   useEffect(() => {
     if (service && isOpen) {
       setFormData({
@@ -62,6 +64,7 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
         comments: "",
         description: "",
       })
+      setPhoneError("") // ✅ Reset error ketika modal dibuka ulang
       fetchPackages()
     }
   }, [service, isOpen])
@@ -90,9 +93,7 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
       : 0
   }
 
-  const getQuantity = () => {
-    return selectedPackage?.quantity || 0
-  }
+  const getQuantity = () => selectedPackage?.quantity || 0
 
   const getUrlPlaceholder = () => {
     if (!service) return "https://instagram.com/username"
@@ -140,7 +141,7 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!service || !user || !selectedPackage) return
+    if (!service || !user || !selectedPackage || !isFormValid()) return
     setIsLoading(true)
     try {
       const orderData = {
@@ -178,19 +179,25 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
     }
   }
 
+  // ✅ Validasi WhatsApp number minimal 12, maksimal 13, angka saja
+  const isFormValid = () => {
+    const phone = formData.whatsapp_number
+    const isNumberOnly = /^\d+$/.test(phone)
+    const isValidLength = phone.length >= 12 && phone.length <= 13
+
+    if (!formData.target_url || !phone) return false
+    if (!isNumberOnly || !isValidLength) return false
+    if (service?.service_type === "comments" && !formData.comments.trim()) return false
+    if (!selectedPackage) return false
+    return true
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount)
-  }
-
-  const isFormValid = () => {
-    if (!formData.target_url || !formData.whatsapp_number) return false
-    if (service?.service_type === "comments" && !formData.comments.trim()) return false
-    if (!selectedPackage) return false
-    return true
   }
 
   if (!service) return null
@@ -209,6 +216,7 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Pilihan Paket */}
           <div className="space-y-4">
             <Label>Pilih Paket</Label>
             <div className="grid gap-3 mt-2">
@@ -239,6 +247,7 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
             </div>
           </div>
 
+          {/* Target URL */}
           <div>
             <Label htmlFor="target_url">{getUrlLabel()} *</Label>
             <Input
@@ -252,6 +261,7 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
             <p className="text-xs text-gray-500 mt-1">{getUrlDescription()}</p>
           </div>
 
+          {/* Comments (jika layanan adalah comment) */}
           {service.service_type === "comments" && (
             <div>
               <Label htmlFor="comments">Comments *</Label>
@@ -266,6 +276,7 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
             </div>
           )}
 
+          {/* Deskripsi Tambahan */}
           <div>
             <Label htmlFor="description">Deskripsi Tambahan</Label>
             <Textarea
@@ -277,18 +288,31 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
             />
           </div>
 
+          {/* WhatsApp Number */}
           <div>
             <Label htmlFor="whatsapp_number">WhatsApp Number *</Label>
             <Input
               id="whatsapp_number"
               type="tel"
               value={formData.whatsapp_number}
-              onChange={(e) => setFormData((prev) => ({ ...prev, whatsapp_number: e.target.value }))}
+              onChange={(e) => {
+                const value = e.target.value
+                setFormData((prev) => ({ ...prev, whatsapp_number: value }))
+                if (!/^\d+$/.test(value)) {
+                  setPhoneError("Nomor hanya boleh berisi angka")
+                } else if (value.length < 12 || value.length > 13) {
+                  setPhoneError("Panjang nomor harus 12–13 digit")
+                } else {
+                  setPhoneError("")
+                }
+              }}
               placeholder="628123456789"
               required
             />
+            {phoneError && <p className="text-red-500 text-sm mt-1">{phoneError}</p>}
           </div>
 
+          {/* Tentang Layanan */}
           {service.description && (
             <div className="bg-blue-50 p-4 rounded-lg">
               <div className="flex items-start gap-2">
@@ -301,6 +325,7 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
             </div>
           )}
 
+          {/* Ringkasan Pesanan */}
           <div className="bg-gray-50 p-4 rounded-lg">
             <h4 className="font-medium mb-3">Ringkasan Pesanan</h4>
             <div className="space-y-2 text-sm">
@@ -324,9 +349,14 @@ export function SocialMediaOrderModal({ service, isOpen, onClose }: SocialMediaO
             </div>
           </div>
 
+          {/* Tombol */}
           <div className="flex justify-end space-x-3">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={!isFormValid() || isLoading}
+            >
               {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {isLoading ? "Memproses..." : "Pesan Sekarang"}
             </Button>

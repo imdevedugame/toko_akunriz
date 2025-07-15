@@ -267,7 +267,7 @@ export default function ContactPage() {
                         <SelectTrigger className="h-12 border-gray-200 focus:border-amber-500">
                           <SelectValue placeholder="Pilih kategori pertanyaan" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           <SelectItem value="general">Pertanyaan Umum</SelectItem>
                           <SelectItem value="technical">Masalah Teknis</SelectItem>
                           <SelectItem value="payment">Pembayaran</SelectItem>

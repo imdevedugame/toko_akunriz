@@ -47,7 +47,7 @@ export function AccountViewModal({ account, isOpen, onClose }: AccountViewModalP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-white">
         <DialogHeader>
           <DialogTitle>Account Details</DialogTitle>
         </DialogHeader>

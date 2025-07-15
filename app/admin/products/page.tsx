@@ -301,7 +301,7 @@ export default function AdminProductsPage() {
 
       {/* View Product Modal */}
       {viewingProduct && (
-        <ProductViewModal product={viewingProduct} isOpen={!!viewingProduct} onClose={() => setViewingProduct(null)} />
+        <ProductViewModal product={viewingProduct} isOpen={!!viewingProduct} onClose={() => setViewingProduct(null)}  />
       )}
 
       {/* Delete Confirmation */}
