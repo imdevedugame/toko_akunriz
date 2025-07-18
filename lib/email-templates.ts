@@ -5,7 +5,7 @@ export function getPasswordResetEmailTemplate(resetUrl: string, userName: string
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Reset Password - Rivazstore</title>
+      <title>Reset Password - Vyloz Premium Zone</title>
       <style>
         body {
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -94,7 +94,7 @@ export function getPasswordResetEmailTemplate(resetUrl: string, userName: string
     <body>
       <div class="container">
         <div class="header">
-          <div class="logo">🛍️ Rivazstore</div>
+          <div class="logo">🛍️ Vyloz Premium Zone</div>
           <h1 class="title">Reset Password Anda</h1>
         </div>
         
@@ -139,7 +139,7 @@ export function getPasswordResetEmailTemplate(resetUrl: string, userName: string
         
         <div class="footer">
           <p>Email ini dikirim secara otomatis, mohon jangan membalas.</p>
-          <p>© 2024 Rivazstore. Semua hak dilindungi.</p>
+          <p>© 2024 Vyloz Premium Zone. Semua hak dilindungi.</p>
           <p>Jika Anda memiliki pertanyaan, hubungi kami di support@premiumstore.com</p>
         </div>
       </div>
@@ -148,7 +148,7 @@ export function getPasswordResetEmailTemplate(resetUrl: string, userName: string
   `
 
   const text = `
-    Reset Password - Rivazstore
+    Reset Password - Vyloz Premium Zone
     
     Halo ${userName},
     
@@ -161,7 +161,7 @@ export function getPasswordResetEmailTemplate(resetUrl: string, userName: string
     
     Jika Anda tidak meminta reset password, abaikan email ini.
     
-    © 2024 Rivazstore
+    © 2024 Vyloz Premium Zone
   `
 
   return { html, text }
@@ -174,7 +174,7 @@ export function getPasswordResetSuccessTemplate(userName: string) {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Password Berhasil Direset - Rivazstore</title>
+      <title>Password Berhasil Direset - Vyloz Premium Zone</title>
       <style>
         body {
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -231,7 +231,7 @@ export function getPasswordResetSuccessTemplate(userName: string) {
     <body>
       <div class="container">
         <div class="header">
-          <div class="logo">🛍️ Rivazstore</div>
+          <div class="logo">🛍️ Vyloz Premium Zone</div>
           <div class="success-icon">✅</div>
           <h1 class="title">Password Berhasil Direset!</h1>
         </div>
@@ -253,7 +253,7 @@ export function getPasswordResetSuccessTemplate(userName: string) {
         </div>
         
         <div class="footer">
-          <p>© 2024 Rivazstore. Semua hak dilindungi.</p>
+          <p>© 2024 Vyloz Premium Zone. Semua hak dilindungi.</p>
           <p>Jika Anda memiliki pertanyaan, hubungi kami di rivaz.store15@gmail.com
 </p>
         </div>
@@ -263,7 +263,7 @@ export function getPasswordResetSuccessTemplate(userName: string) {
   `
 
   const text = `
-    Password Berhasil Direset - Rivazstore
+    Password Berhasil Direset - Vyloz Premium Zone
     
     Selamat ${userName}!
     
@@ -276,7 +276,7 @@ export function getPasswordResetSuccessTemplate(userName: string) {
     
     Jika Anda tidak melakukan perubahan password ini, segera hubungi tim support kami.
     
-    © 2024 Rivazstore
+    © 2024 Vyloz Premium Zone
   `
 
   return { html, text }

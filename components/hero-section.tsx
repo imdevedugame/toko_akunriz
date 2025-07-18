@@ -22,11 +22,12 @@ export function HeroSection() {
                 {/* Logo & Brand */}
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <img src="/Logo.png" alt="PremiumStore Logo" className="w-full h-full mb-4 object-cover" />
+                    <img src="/Logo.png" alt="PremiumStore Logo" className="w-full h-full  object-cover" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">PremiumStore</h2>
-                    <p className="text-sm text-gray-600">Trusted Digital Services</p>
+                    <h2 className="text-2xl font-bold text-gray-900">Vyloz Premium Zone
+</h2>
+                    <p className="text-sm text-gray-600">Pusat Digital Services</p>
                   </div>
                 </div>
 

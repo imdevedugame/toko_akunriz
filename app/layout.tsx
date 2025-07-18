@@ -9,9 +9,16 @@ import { AuthProvider } from "@/components/auth-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Rivazstore - Akun Premium & IndoSMM Services",
-  description: "Toko online terpercaya untuk akun premium dan layanan IndoSMM",
-  generator: "v0.dev",
+  title: " Vyloz Premium Zone - Pusat Digital Services",
+  description: "Toko online terpercaya untuk akun premium dan Social Media Services.",
+  keywords: [
+    "akun premium",
+    "social media services",
+    "toko online",
+    "digital services",
+    "premium zone",
+    "Vyloz",
+  ],
 }
 
 export default function RootLayout({
