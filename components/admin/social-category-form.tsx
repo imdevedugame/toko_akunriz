@@ -75,34 +75,35 @@ export function SocialCategoryForm({ isOpen, onClose, onSuccess, category }: Soc
       slug: generateSlug(name),
     }))
   }
+const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0]
+  if (!file) return
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  setIsUploading(true)
+  try {
+    const formDataUpload = new FormData()
+    formDataUpload.append("files", file)
 
-    setIsUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
+    const response = await fetch("/api/upload?type=services", {
+      method: "POST",
+      body: formDataUpload,
+    })
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setFormData((prev) => ({ ...prev, image_url: data.url }))
-      } else {
-        alert("Failed to upload image")
-      }
-    } catch (error) {
-      console.error("Upload error:", error)
-      alert("Failed to upload image")
-    } finally {
-      setIsUploading(false)
+    if (response.ok) {
+      const data = await response.json()
+      setFormData((prev) => ({ ...prev, image_url: data.files?.[0] || "" }))
+    } else {
+      alert("Gagal mengunggah gambar")
     }
+  } catch (error) {
+    console.error("Upload error:", error)
+    alert("Gagal mengunggah gambar")
+  } finally {
+    setIsUploading(false)
   }
+}
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
