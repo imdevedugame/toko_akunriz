@@ -74,17 +74,7 @@ const menuItems = [
       },
     ],
   },
-  {
-    title: "IndoSMM Services",
-    icon: MessageSquare,
-    children: [
-      {
-        title: "Services",
-        href: "/admin/services",
-        icon: MessageSquare,
-      },
-    ],
-  },
+  
   {
     title: "Pesanan",
     icon: ShoppingCart,
@@ -94,11 +84,7 @@ const menuItems = [
         href: "/admin/orders",
         icon: ShoppingCart,
       },
-      {
-        title: "IndoSMM Orders",
-        href: "/admin/indosmm-orders",
-        icon: MessageSquare,
-      },
+      
       {
         title: "Social Media Orders",
         href: "/admin/social-orders",
@@ -116,11 +102,7 @@ const menuItems = [
     href: "/admin/reports",
     icon: BarChart3,
   },
-  {
-    title: "Pengaturan",
-    href: "/admin/manage",
-    icon: Settings,
-  },
+
 ]
 
 interface SidebarContentProps {
