@@ -76,18 +76,17 @@ export async function GET(request: NextRequest) {
     const currentSocial = (currentSocialStats as any[])[0]
     const prevOrder = (prevOrderStats as any[])[0]
     const prevSocial = (prevSocialStats as any[])[0]
+const current = {
+  totalOrders: Number(currentOrder.totalOrders) + Number(currentSocial.totalOrders),
+  totalRevenue: Number(currentOrder.totalRevenue) + Number(currentSocial.totalRevenue),
+  totalCustomers: Number(currentOrder.totalCustomers) + Number(currentSocial.totalCustomers),
+}
 
-    const current = {
-      totalOrders: currentOrder.totalOrders + currentSocial.totalOrders,
-      totalRevenue: currentOrder.totalRevenue + currentSocial.totalRevenue,
-      totalCustomers: currentOrder.totalCustomers + currentSocial.totalCustomers, // Note: This might have duplicates
-    }
-
-    const previous = {
-      totalOrders: prevOrder.totalOrders + prevSocial.totalOrders,
-      totalRevenue: prevOrder.totalRevenue + prevSocial.totalRevenue,
-      totalCustomers: prevOrder.totalCustomers + prevSocial.totalCustomers,
-    }
+const previous = {
+  totalOrders: Number(prevOrder.totalOrders) + Number(prevSocial.totalOrders),
+  totalRevenue: Number(prevOrder.totalRevenue) + Number(prevSocial.totalRevenue),
+  totalCustomers: Number(prevOrder.totalCustomers) + Number(prevSocial.totalCustomers),
+}
 
     // Calculate growth percentages
     const revenueGrowth =
