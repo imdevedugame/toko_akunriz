@@ -24,15 +24,9 @@ import {
   Truck,
   RefreshCw,
   HelpCircle,
-  Phone,
-  Mail,
-  MapPin,
-  Facebook,
-  Twitter,
-  Instagram,
-  Youtube,
   Store,
   TrendingUp,
+  Timer,
 } from "lucide-react"
 import { ProductImageGallery } from "@/components/product-image-gallery"
 import { PurchaseModal } from "@/components/purchase-modal"
@@ -45,6 +39,7 @@ interface Product {
   images: string[]
   user_price: number
   reseller_price: number
+  fake_price?: number
   stock: number
   category_name: string
   category_slug: string
@@ -56,6 +51,11 @@ interface Product {
   updated_at: string
   userPrice: number
   resellerPrice: number
+  is_flash_sale?: boolean
+  is_flash_sale_active?: boolean
+  flash_sale_price?: number
+  flash_sale_discount_percent?: number
+  flash_sale_end?: string
   category: {
     name: string
     slug: string
@@ -78,6 +78,69 @@ const categoryColors = {
   Instagram: "from-purple-500 to-pink-500",
   TikTok: "from-black to-gray-800",
   default: "from-amber-500 to-orange-600",
+}
+
+function FlashSaleTimer({ endDate }: { endDate: string }) {
+  const [timeLeft, setTimeLeft] = useState<{
+    days: number
+    hours: number
+    minutes: number
+    seconds: number
+  } | null>(null)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date().getTime()
+      const end = new Date(endDate).getTime()
+      const distance = end - now
+
+      if (distance < 0) {
+        setTimeLeft(null)
+        clearInterval(timer)
+        return
+      }
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000)
+
+      setTimeLeft({ days, hours, minutes, seconds })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [endDate])
+
+  if (!timeLeft) return null
+
+  return (
+    <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-4 sm:p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Timer className="h-5 w-5 text-red-600" />
+        <span className="font-bold text-red-800 text-lg">Flash Sale Berakhir Dalam:</span>
+      </div>
+      <div className="flex gap-2 sm:gap-4 justify-center">
+        {timeLeft.days > 0 && (
+          <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-3 sm:px-4 sm:py-4 rounded-xl text-center min-w-[60px] sm:min-w-[80px] shadow-lg">
+            <div className="text-xl sm:text-2xl font-bold">{timeLeft.days}</div>
+            <div className="text-xs sm:text-sm">Hari</div>
+          </div>
+        )}
+        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-3 sm:px-4 sm:py-4 rounded-xl text-center min-w-[60px] sm:min-w-[80px] shadow-lg">
+          <div className="text-xl sm:text-2xl font-bold">{timeLeft.hours}</div>
+          <div className="text-xs sm:text-sm">Jam</div>
+        </div>
+        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-3 sm:px-4 sm:py-4 rounded-xl text-center min-w-[60px] sm:min-w-[80px] shadow-lg">
+          <div className="text-xl sm:text-2xl font-bold">{timeLeft.minutes}</div>
+          <div className="text-xs sm:text-sm">Menit</div>
+        </div>
+        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-3 sm:px-4 sm:py-4 rounded-xl text-center min-w-[60px] sm:min-w-[80px] shadow-lg">
+          <div className="text-xl sm:text-2xl font-bold">{timeLeft.seconds}</div>
+          <div className="text-xs sm:text-sm">Detik</div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function ProductDetailPage() {
@@ -148,12 +211,40 @@ export default function ProductDetailPage() {
 
   const getPrice = () => {
     if (!product) return 0
+
+    // If flash sale is active, show flash sale price
+    if (product.is_flash_sale_active && product.flash_sale_price) {
+      return user?.role === "reseller" ? product.reseller_price : product.flash_sale_price
+    }
+
     return user?.role === "reseller" ? product.reseller_price : product.user_price
   }
 
+  const getOriginalPrice = () => {
+    if (!product) return null
+
+    if (product.is_flash_sale_active) {
+      return product.user_price
+    }
+    if (product.fake_price && product.fake_price > product.user_price) {
+      return product.fake_price
+    }
+    return user?.role === "reseller" ? product.user_price : null
+  }
+
   const getDiscountPercentage = () => {
-    if (!product || user?.role !== "reseller") return 0
-    return Math.round(((product.user_price - product.reseller_price) / product.user_price) * 100)
+    if (!product) return 0
+
+    if (product.is_flash_sale_active && product.flash_sale_discount_percent) {
+      return product.flash_sale_discount_percent
+    }
+    if (product.fake_price && product.fake_price > product.user_price) {
+      return Math.round(((product.fake_price - product.user_price) / product.fake_price) * 100)
+    }
+    if (user?.role === "reseller") {
+      return Math.round(((product.user_price - product.reseller_price) / product.user_price) * 100)
+    }
+    return 0
   }
 
   const getCategoryColor = (category: string) => {
@@ -239,6 +330,9 @@ export default function ProductDetailPage() {
 
   const stockStatus = getStockStatus(product.stock)
   const StockIcon = stockStatus.icon
+  const originalPrice = getOriginalPrice()
+  const currentPrice = getPrice()
+  const discountPercent = getDiscountPercentage()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
@@ -257,6 +351,7 @@ export default function ProductDetailPage() {
               <CardContent className="p-0">
                 <ProductImageGallery
                   images={product.images.length > 0 ? product.images : ["/placeholder.svg?height=400&width=400"]}
+                  productName={product.name}
                 />
               </CardContent>
             </Card>
@@ -323,6 +418,16 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
+                {/* Flash Sale Badge */}
+                {product.is_flash_sale_active && (
+                  <div className="mb-4">
+                    <Badge className="bg-gradient-to-r from-red-500 to-red-600 text-white font-bold px-4 py-2 shadow-md animate-pulse">
+                      <Zap className="h-4 w-4 mr-2" />
+                      FLASH SALE AKTIF
+                    </Badge>
+                  </div>
+                )}
+
                 {/* Product Name */}
                 <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent leading-tight">
                   {product.name}
@@ -349,24 +454,45 @@ export default function ProductDetailPage() {
                   </Badge>
                 </div>
 
+                {/* Flash Sale Timer */}
+                {product.is_flash_sale_active && product.flash_sale_end && (
+                  <div className="mb-6">
+                    <FlashSaleTimer endDate={product.flash_sale_end} />
+                  </div>
+                )}
+
                 {/* Enhanced Pricing */}
                 <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
                   <div className="flex items-end justify-between">
                     <div>
-                      <div className="text-sm text-gray-600 mb-1 font-medium">Harga Terbaik</div>
-                      <div className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-                        {formatPrice(getPrice())}
+                      <div className="text-sm text-gray-600 mb-1 font-medium">
+                        {product.is_flash_sale_active ? "Harga Flash Sale" : "Harga Terbaik"}
                       </div>
-                      {user?.role === "reseller" && getDiscountPercentage() > 0 && (
-                        <div className="text-sm text-gray-500 line-through font-medium mt-1">
-                          {formatPrice(product.user_price)}
+                      {originalPrice && (
+                        <div className="text-sm text-gray-500 line-through font-medium mb-1">
+                          {formatPrice(originalPrice)}
                         </div>
                       )}
+                      <div
+                        className={`text-3xl font-bold ${
+                          product.is_flash_sale_active
+                            ? "bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent"
+                            : "bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"
+                        }`}
+                      >
+                        {formatPrice(currentPrice)}
+                      </div>
                     </div>
-                    {user?.role === "reseller" && getDiscountPercentage() > 0 && (
-                      <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold px-3 py-2 shadow-md">
+                    {discountPercent > 0 && (
+                      <Badge
+                        className={`font-bold px-3 py-2 shadow-md ${
+                          product.is_flash_sale_active
+                            ? "bg-gradient-to-r from-red-500 to-red-600 text-white"
+                            : "bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                        }`}
+                      >
                         <Sparkles className="h-4 w-4 mr-1" />
-                        Hemat {getDiscountPercentage()}%
+                        Hemat {discountPercent}%
                       </Badge>
                     )}
                   </div>
@@ -374,6 +500,12 @@ export default function ProductDetailPage() {
                     <div className="flex items-center text-green-600 bg-green-50 px-3 py-2 rounded-full mt-3">
                       <Crown className="h-4 w-4 mr-2" />
                       <span className="font-semibold">💰 Harga khusus reseller</span>
+                    </div>
+                  )}
+                  {product.is_flash_sale_active && (
+                    <div className="flex items-center text-red-600 bg-red-50 px-3 py-2 rounded-full mt-3">
+                      <Zap className="h-4 w-4 mr-2" />
+                      <span className="font-semibold">⚡ Flash Sale - Waktu Terbatas!</span>
                     </div>
                   )}
                 </div>
@@ -385,7 +517,9 @@ export default function ProductDetailPage() {
                     className={`w-full h-14 font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg ${
                       product.stock === 0
                         ? "bg-gradient-to-r from-gray-300 to-gray-400 text-gray-600 cursor-not-allowed"
-                        : "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
+                        : product.is_flash_sale_active
+                          ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white"
+                          : "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
                     }`}
                     onClick={() => setShowPurchaseModal(true)}
                     disabled={product.stock === 0}
@@ -393,7 +527,7 @@ export default function ProductDetailPage() {
                     {product.stock > 0 ? (
                       <>
                         <ShoppingCart className="h-5 w-5 mr-2" />
-                        Beli Sekarang
+                        {product.is_flash_sale_active ? "Beli Flash Sale Sekarang!" : "Beli Sekarang"}
                       </>
                     ) : (
                       <>
@@ -580,7 +714,6 @@ export default function ProductDetailPage() {
           />
         )}
       </div>
-
     </div>
   )
 }

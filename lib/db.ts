@@ -34,4 +34,15 @@ pool
     console.error("Database connection failed:", error)
   })
 
+// Helper function to execute queries
+export const query = async (sql: string, params?: any[]) => {
+  try {
+    const [results] = await pool.execute(sql, params)
+    return results
+  } catch (error) {
+    console.error("Query execution failed:", error)
+    throw error
+  }
+}
+
 export default pool
