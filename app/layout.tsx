@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     title: "Vyloz Premium Zone - Pusat Digital Services | Akun Premium & Layanan Digital Terpercaya",
     description:
       "Vyloz Premium Zone adalah pusat layanan digital terpercaya untuk akun premium, layanan IndoSMM, followers, likes, views, dan kebutuhan digital marketing lainnya. Harga murah, proses cepat, dan bergaransi.",
-    url: "https://www.vylozpremiumzone.com", // Ganti dengan URL website Anda
+    url: "https://vylozzone.com", // Ganti dengan URL website Anda
     siteName: "Vyloz Premium Zone",
     images: [
       {
@@ -57,6 +57,7 @@ export default function RootLayout({
     <html lang="id">
       <head>
         {/* JSON-LD Schema Markup for WebSite */}
+        <meta name="google-site-verification" content="-NrYnWzoFNMGy6TM9zT67jOU-SAjE5Pm0vexWZnO6Sw" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -64,10 +65,10 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebSite",
               name: "Vyloz Premium Zone - Pusat Digital Services",
-              url: "https://www.vylozpremiumzone.com", // Ganti dengan URL website Anda
+              url: "https://vylozzone.com", // Ganti dengan URL website Anda
               potentialAction: {
                 "@type": "SearchAction",
-                target: "https://www.vylozpremiumzone.com/products?search={search_term_string}", // Ganti dengan URL pencarian produk Anda
+                target: "https://vylozzone.com/products?search={search_term_string}", // Ganti dengan URL pencarian produk Anda
                 "query-input": "required name=search_term_string",
               },
             }),
@@ -81,7 +82,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "Organization",
               name: "Vyloz Premium Zone",
-              url: "https://www.vylozpremiumzone.com", // Ganti dengan URL website Anda
+              url: "https://vylozzone.com", // Ganti dengan URL website Anda
               logo: "/Logo.png?height=60&width=60", // Ganti dengan URL logo Anda
               sameAs: [
                 "https://www.facebook.com/vylozpremiumzone", // Ganti dengan URL Facebook Anda
