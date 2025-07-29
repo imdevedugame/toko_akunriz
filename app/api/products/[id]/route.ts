@@ -67,6 +67,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   }
 }
 
+
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { params } = context
@@ -121,9 +122,14 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "")
 
-    const slugCheckResult = await query("SELECT id FROM premium_products WHERE slug = ? AND id != ?", [finalSlug, id]);
-    const slugCheck = (slugCheckResult as any[])[0];
-    if ((slugCheck as any[]).length > 0) {
+    const slugCheckResult = await query(
+      "SELECT id FROM premium_products WHERE slug = ? AND id != ?",
+      [finalSlug, id],
+    )
+    const slugCheck = (slugCheckResult as any[])[0]
+
+    // ✅ Fix di sini — kita cukup cek apakah slugCheck ada atau tidak
+    if (slugCheck) {
       return NextResponse.json({ error: "Product with this slug already exists" }, { status: 400 })
     }
 
@@ -157,13 +163,12 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 
     await query("DELETE FROM product_images WHERE product_id = ?", [id])
 
-    if (images && images.length > 0) {
+    if (images && Array.isArray(images)) {
       for (let i = 0; i < images.length; i++) {
-        await query("INSERT INTO product_images (product_id, image_url, sort_order) VALUES (?, ?, ?)", [
-          id,
-          images[i],
-          i,
-        ])
+        await query(
+          "INSERT INTO product_images (product_id, image_url, sort_order) VALUES (?, ?, ?)",
+          [id, images[i], i],
+        )
       }
     }
 
@@ -202,6 +207,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     )
   }
 }
+
 
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
