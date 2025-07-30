@@ -2,70 +2,81 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAuthUser } from "@/lib/auth"
 import { query } from "@/lib/db"
 
-export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+
+export async function GET(_: unknown, context: { params: Promise<{ id: string }> }) {
   try {
     const { params } = context
     const { id } = await params
 
     console.log("GET premium product by ID:", id)
 
-    const sql = `
+    const rows = await query(
+      `
       SELECT 
         p.*,
-        c.name as category_name,
-        c.slug as category_slug,
+        c.name         AS category_name,
+        c.slug         AS category_slug,
+        GROUP_CONCAT(pi.image_url ORDER BY pi.sort_order) AS images,
         (
           SELECT COUNT(*) 
           FROM premium_accounts pa 
-          WHERE pa.product_id = p.id AND pa.status = 'available'
-        ) as stock,
-        CASE 
-          WHEN p.is_flash_sale = TRUE AND p.flash_sale_discount_percent IS NOT NULL 
-          THEN p.user_price * (1 - p.flash_sale_discount_percent / 100.0)
-          ELSE NULL 
-        END as flash_sale_price,
+          WHERE pa.product_id = p.id 
+            AND pa.status = 'available'
+        ) AS stock,
         CASE 
           WHEN p.is_flash_sale = TRUE 
-          AND p.flash_sale_start IS NOT NULL 
-          AND p.flash_sale_end IS NOT NULL 
-          AND NOW() BETWEEN p.flash_sale_start AND p.flash_sale_end 
+            AND p.flash_sale_discount_percent IS NOT NULL 
+          THEN p.user_price * (1 - p.flash_sale_discount_percent / 100.0)
+          ELSE NULL 
+        END AS flash_sale_price,
+        CASE 
+          WHEN p.is_flash_sale = TRUE 
+            AND p.flash_sale_start  IS NOT NULL 
+            AND p.flash_sale_end    IS NOT NULL 
+            AND NOW() BETWEEN p.flash_sale_start 
+                          AND p.flash_sale_end 
           THEN TRUE 
           ELSE FALSE 
-        END as is_flash_sale_active
+        END AS is_flash_sale_active
       FROM premium_products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.id = ? AND p.status = 'active'
-    `
+      LEFT JOIN categories      c  ON p.category_id = c.id
+      LEFT JOIN product_images  pi ON pi.product_id  = p.id
+      WHERE p.id     = ?
+        AND p.status = 'active'
+      GROUP BY p.id
+      `,
+      [id],
+    )
 
-    const products = (await query(sql, [id])) as any[]
-
+    const products = rows as any[]
     if (products.length === 0) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    const product = products[0]
-
-    const processedProduct = {
-      ...product,
-      images: product.images ? safeJsonParse(product.images) : [],
-      features: product.features ? safeJsonParse(product.features) : [],
-      tips: product.tips ? safeJsonParse(product.tips) : [],
-    }
-
-    function safeJsonParse(jsonString: string) {
+    function safeParseJSON(str: string | null | undefined) {
+      if (!str) return []
       try {
-        return JSON.parse(jsonString)
+        return JSON.parse(str)
       } catch {
         return []
       }
     }
 
-    return NextResponse.json({ product: processedProduct })
+    const raw = products[0]
+    const product = {
+      ...raw,
+      images: raw.images ? raw.images.split(",") : [],
+      features: safeParseJSON(raw.features),
+      tips:     safeParseJSON(raw.tips),
+    }
+
+    return NextResponse.json({ product })
   } catch (error) {
-    console.error("Get premium product error:", error)
+    console.error("Get product error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
 
 
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
