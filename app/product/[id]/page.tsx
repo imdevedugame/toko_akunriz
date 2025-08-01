@@ -434,7 +434,7 @@ export default function ProductDetailPage() {
               <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-6 text-center">
                   <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
-                    <Store className="h-8 w-8 text-white" />
+                   <img src="/Logo.png" alt="PremiumStore Logo" className="w-full h-full  object-cover mb-5" />
                   </div>
                   <h3 className="text-xl font-bold mb-3 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
                     Vyloz Premium Zone
@@ -490,14 +490,14 @@ export default function ProductDetailPage() {
                   </div>
 
                   {/* Flash Sale Badge */}
-                  {product.is_flash_sale_active && (
+                  {product.is_flash_sale_active ?(
                     <div className="mb-4">
                       <Badge className="bg-gradient-to-r from-red-500 to-red-600 text-white font-bold px-4 py-2 shadow-md animate-pulse">
                         <Zap className="h-4 w-4 mr-2" />
                         FLASH SALE AKTIF
                       </Badge>
                     </div>
-                  )}
+                  ) : null }
 
                   {/* Product Name */}
                   <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent leading-tight">
@@ -528,11 +528,11 @@ export default function ProductDetailPage() {
                   </div>
 
                   {/* Flash Sale Timer */}
-                  {product.is_flash_sale_active && product.flash_sale_end && (
+                  {product.is_flash_sale_active && product.flash_sale_end ? (
                     <div className="mb-6">
                       <FlashSaleTimer endDate={product.flash_sale_end} />
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Enhanced Pricing */}
                   <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
@@ -575,12 +575,12 @@ export default function ProductDetailPage() {
                         <span className="font-semibold">💰 Harga khusus reseller</span>
                       </div>
                     )}
-                    {product.is_flash_sale_active && (
+                    {product.is_flash_sale_active ? (
                       <div className="flex items-center text-red-600 bg-red-50 px-3 py-2 rounded-full mt-3">
                         <Zap className="h-4 w-4 mr-2" />
                         <span className="font-semibold">⚡ Flash Sale - Waktu Terbatas!</span>
                       </div>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Enhanced Purchase Button */}
