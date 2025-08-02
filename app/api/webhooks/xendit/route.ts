@@ -53,8 +53,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 })
   }
 }
-
-// 🎯 Premium account processor
 async function processPremiumAccountOrder(orderId: number) {
   try {
     console.log("🔐 Processing premium account order:", orderId)
@@ -73,19 +71,21 @@ async function processPremiumAccountOrder(orderId: number) {
 
     for (const item of itemList) {
       const [accountRows] = await db.execute(
-        "SELECT * FROM premium_accounts WHERE product_id = ? AND status = 'available' LIMIT 1",
-        [item.product_id]
+        `SELECT * FROM premium_accounts 
+         WHERE product_id = ? AND status = 'reserved' AND reserved_for_order_id = ?
+         LIMIT 1`,
+        [item.product_id, orderId]
       )
 
       const accounts = accountRows as any[]
       if (accounts.length === 0) {
-        console.error(`❌ No available premium accounts for product: ${item.product_id}`)
+        console.error(`❌ No reserved premium accounts for product: ${item.product_id}`)
         await db.execute("UPDATE orders SET status = 'failed', updated_at = NOW() WHERE id = ?", [orderId])
         return
       }
 
       const account = accounts[0]
-      console.log(`✅ Assigning account ID: ${account.id} to order`)
+      console.log(`✅ Selling reserved account ID: ${account.id} for order`)
 
       await db.execute(
         `UPDATE premium_accounts 
@@ -102,6 +102,7 @@ async function processPremiumAccountOrder(orderId: number) {
     await db.execute("UPDATE orders SET status = 'failed', updated_at = NOW() WHERE id = ?", [orderId])
   }
 }
+
 
 // 📦 IndoSMM processor
 async function processIndoSMMOrder(orderId: number) {
