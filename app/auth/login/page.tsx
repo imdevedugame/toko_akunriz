@@ -94,7 +94,7 @@ export default function LoginPage() {
                 <Package className="h-8 w-8 text-white" />
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-2">
-                Rivazstore
+                Vyloz Premium Zone
               </h1>
               <p className="text-gray-600 text-sm">Platform digital terpercaya #1 di Indonesia</p>
             </div>

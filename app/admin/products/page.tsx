@@ -35,6 +35,7 @@ interface Product {
   features: string[]
   tips: string[]
   created_at: string
+  category_id: number
 }
 
 export default function AdminProductsPage() {
@@ -283,7 +284,7 @@ export default function AdminProductsPage() {
 
       {/* Edit Product Modal */}
       <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white" >
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
             <DialogDescription>Update the product information.</DialogDescription>
@@ -300,7 +301,7 @@ export default function AdminProductsPage() {
 
       {/* View Product Modal */}
       {viewingProduct && (
-        <ProductViewModal product={viewingProduct} isOpen={!!viewingProduct} onClose={() => setViewingProduct(null)} />
+        <ProductViewModal product={viewingProduct} isOpen={!!viewingProduct} onClose={() => setViewingProduct(null)}  />
       )}
 
       {/* Delete Confirmation */}

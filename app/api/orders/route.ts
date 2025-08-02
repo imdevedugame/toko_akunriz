@@ -3,6 +3,15 @@ import { getAuthUser } from "@/lib/auth"
 import { xenditService } from "@/lib/xendit"
 import db from "@/lib/db"
 
+function isValidJSON(str: string): boolean {
+  try {
+    JSON.parse(str)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
@@ -11,53 +20,93 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const type = searchParams.get("type")
-    const limit = Number.parseInt(searchParams.get("limit") || "10")
+    const limit = Number.parseInt(searchParams.get("limit") || "20")
     const offset = Number.parseInt(searchParams.get("offset") || "0")
+    const status = searchParams.get("status")
 
     let query = `
-      SELECT o.*, 
-        CASE 
-          WHEN o.type = 'premium_account' THEN 
-            (SELECT JSON_OBJECT(
-              'product_name', p.name,
-              'account_email', opi.account_email,
-              'account_password', opi.account_password
-            ) FROM order_premium_items opi 
-            JOIN premium_products p ON opi.product_id = p.id 
-            WHERE opi.order_id = o.id LIMIT 1)
-          WHEN o.type = 'indosmm_service' THEN
-            (SELECT JSON_OBJECT(
-              'service_name', s.name,
-              'target', oii.target,
-              'quantity', oii.quantity,
-              'indosmm_order_id', oii.indosmm_order_id,
-              'indosmm_status', oii.indosmm_status
-            ) FROM order_indosmm_items oii
-            JOIN indosmm_services s ON oii.service_id = s.id
-            WHERE oii.order_id = o.id LIMIT 1)
-        END as order_details
+      SELECT 
+        o.*,
+        opi.product_id,
+        opi.quantity,
+        opi.price as unit_price,
+        opi.is_flash_sale,
+        opi.flash_sale_discount_percent,
+        opi.original_price,
+        opi.savings_amount,
+        opi.account_email,
+        opi.account_password,
+        p.name as product_name,
+        p.slug as product_slug,
+        c.name as category_name
       FROM orders o
-      WHERE o.user_id = ?
+      LEFT JOIN order_premium_items opi ON o.id = opi.order_id
+      LEFT JOIN premium_products p ON opi.product_id = p.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE o.user_id = ? AND o.type = 'premium_account'
     `
 
-    const params: any[] = [user.id]
+    const queryParams: any[] = [user.id]
 
-    if (type) {
-      query += " AND o.type = ?"
-      params.push(type)
+    if (status && status !== "all") {
+      query += " AND o.status = ?"
+      queryParams.push(status)
     }
 
-    // Interpolate LIMIT and OFFSET directly into the query string
-    query += ` ORDER BY o.created_at DESC LIMIT ${Number.isFinite(limit) ? limit : 10} OFFSET ${Number.isFinite(offset) ? offset : 0}`
+    query += ` ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}`
 
-    const [rows] = await db.execute(query, params)
-    const orders = (rows as any[]).map((order) => ({
-      ...order,
-      order_details: order.order_details ?? null,
-    }))
+    const [rows] = await db.execute(query, queryParams)
+    const orders = rows as any[]
 
-    return NextResponse.json({ orders })
+    // Group order items by order
+    const groupedOrders = orders.reduce((acc, row) => {
+      const orderId = row.id
+      if (!acc[orderId]) {
+        acc[orderId] = {
+          id: row.id,
+          order_number: row.order_number,
+          type: row.type,
+          total_amount: Number.parseFloat(row.total_amount),
+          status: row.status,
+          payment_method: row.payment_method || "xendit",
+          payment_status: row.payment_status || "pending",
+          xendit_invoice_id: row.xendit_invoice_id,
+          xendit_invoice_url: row.xendit_invoice_url,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          items: [],
+        }
+      }
+
+      if (row.product_id) {
+        acc[orderId].items.push({
+          product_id: row.product_id,
+          product_name: row.product_name,
+          product_slug: row.product_slug,
+          category_name: row.category_name,
+          quantity: Number.parseInt(row.quantity) || 1,
+          unit_price: Number.parseFloat(row.unit_price),
+          total_price: Number.parseFloat(row.unit_price) * (Number.parseInt(row.quantity) || 1),
+          is_flash_sale: Boolean(row.is_flash_sale),
+          flash_sale_discount_percent: row.flash_sale_discount_percent || 0,
+          original_price: row.original_price ? Number.parseFloat(row.original_price) : null,
+          savings_amount: row.savings_amount ? Number.parseFloat(row.savings_amount) : 0,
+          account_email: row.account_email,
+          account_password: row.account_password,
+        })
+      }
+
+      return acc
+    }, {})
+
+    return NextResponse.json({
+      orders: Object.values(groupedOrders),
+      pagination: {
+        limit,
+        offset,
+        total: Object.keys(groupedOrders).length,
+      },
+    })
   } catch (error) {
     console.error("Get orders error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -71,138 +120,310 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { type, items } = await request.json()
+    const body = await request.json()
+    const { type, items } = body
 
-    if (!type || !items || items.length === 0) {
-      return NextResponse.json({ error: "Invalid order data" }, { status: 400 })
+    if (!type || !items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        {
+          error: "Missing required fields",
+          required: ["type", "items"],
+        },
+        { status: 400 },
+      )
     }
 
-    // Generate order number
-    const orderNumber = `ORD-${Date.now()}-${user.id}`
+    // Start transaction
+    await db.query("START TRANSACTION")
 
-    // Calculate total amount
-    let totalAmount = 0
 
-    if (type === "premium_account") {
+    try {
+      let totalAmount = 0
+      const orderItems = []
+      const now = new Date()
+
+      // Validate and calculate each item
       for (const item of items) {
-        const [productRows] = await db.execute("SELECT user_price, reseller_price FROM premium_products WHERE id = ?", [
-          item.product_id,
-        ])
-        const products = productRows as any[]
-        if (products.length === 0) {
-          return NextResponse.json({ error: "Product not found" }, { status: 404 })
+        const { product_id, quantity = 1 } = item
+
+        if (!product_id) {
+          throw new Error("Product ID is required for each item")
         }
-        const price = user.role === "reseller" ? products[0].reseller_price : products[0].user_price
-        totalAmount += price * (item.quantity || 1)
-      }
-    } else if (type === "indosmm_service") {
-      for (const item of items) {
-        const [serviceRows] = await db.execute("SELECT user_rate, reseller_rate FROM indosmm_services WHERE id = ?", [
-          item.service_id,
-        ])
-        const services = serviceRows as any[]
-        if (services.length === 0) {
-          return NextResponse.json({ error: "Service not found" }, { status: 404 })
-        }
-        const rate = user.role === "reseller" ? services[0].reseller_rate : services[0].user_rate
-        totalAmount += (rate * item.quantity) / 1000
-      }
-    }
 
-    // Create Xendit invoice
-    const xenditInvoice = await xenditService.createInvoice({
-      external_id: orderNumber,
-      amount: totalAmount,
-      description: `Order ${orderNumber}`,
-      invoice_duration: 86400, // 24 hours
-      customer: {
-        given_names: user.name,
-        email: user.email,
-      },
-      success_redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/order/success?order=${orderNumber}`,
-      failure_redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/order/failed?order=${orderNumber}`,
-    })
-
-    // Create order in database
-    const [orderResult] = await db.execute(
-      `INSERT INTO orders 
-       (user_id, order_number, type, total_amount, xendit_invoice_id) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [user.id, orderNumber, type, totalAmount, xenditInvoice.id],
-    )
-
-    const orderId = (orderResult as any).insertId
-
-    // Create order items
-    if (type === "premium_account") {
-      for (const item of items) {
-        const productId = item.product_id
+        // Get product with current stock from premium_accounts
         const [productRows] = await db.execute(
-          "SELECT user_price, reseller_price FROM premium_products WHERE id = ?",
-          [productId]
+          `
+          SELECT 
+            p.*,
+            c.name AS category_name,
+            c.slug AS category_slug,
+            (
+              SELECT COUNT(*) 
+              FROM premium_accounts pa 
+              WHERE pa.product_id = p.id AND pa.status = 'available'
+            ) AS available_stock,
+            GROUP_CONCAT(pi.image_url ORDER BY pi.sort_order) AS images
+          FROM premium_products p
+          LEFT JOIN categories c ON p.category_id = c.id
+          LEFT JOIN product_images pi ON p.id = pi.product_id
+          WHERE p.id = ? AND p.status = 'active'
+          GROUP BY p.id
+        `,
+          [product_id],
         )
-        const products = productRows as any[]
-        const price = user.role === "reseller" ? products[0].reseller_price : products[0].user_price
 
-        // Ambil akun premium yang tersedia
-        const [premiumAccountRows] = await db.execute(
-          `SELECT * FROM premium_accounts WHERE product_id = ? AND status = 'available' LIMIT 1`,
-          [productId]
-        )
-        const premiumAccount = (premiumAccountRows as any[])[0]
-
-        if (!premiumAccount) {
-          throw new Error("Akun premium tidak tersedia")
+        const product = (productRows as any[])[0]
+        if (!product) {
+          throw new Error(`Product with ID ${product_id} not found or inactive`)
         }
 
-        // Buat record di order_premium_items
+        const availableStock = Number.parseInt(product.available_stock) || 0
+        if (availableStock < quantity) {
+          throw new Error(
+            `Insufficient stock for ${product.name}. Available: ${availableStock}, Requested: ${quantity}`,
+          )
+        }
+
+        // Check if flash sale is active
+        const isFlashSaleActive =
+          product.is_flash_sale &&
+          product.flash_sale_start &&
+          product.flash_sale_end &&
+          new Date(product.flash_sale_start) <= now &&
+          new Date(product.flash_sale_end) >= now
+
+        // Calculate pricing
+        let unitPrice: number
+        let originalPrice: number | null = null
+        let savingsAmount = 0
+        let flashSaleDiscountPercent = 0
+        let isFlashSale = false
+
+        if (isFlashSaleActive && user.role !== "reseller") {
+          // Apply flash sale price for regular users
+          isFlashSale = true
+          flashSaleDiscountPercent = product.flash_sale_discount_percent || 0
+          originalPrice = Number.parseFloat(product.user_price)
+          unitPrice = Math.round(originalPrice * (1 - flashSaleDiscountPercent / 100))
+          savingsAmount = (originalPrice - unitPrice) * quantity
+        } else if (user.role === "reseller") {
+          // Reseller gets special price regardless of flash sale
+          unitPrice = Number.parseFloat(product.reseller_price)
+          originalPrice = Number.parseFloat(product.user_price)
+          savingsAmount = (originalPrice - unitPrice) * quantity
+        } else {
+          // Regular price for normal users when no flash sale
+          unitPrice = Number.parseFloat(product.user_price)
+          if (product.fake_price && Number.parseFloat(product.fake_price) > unitPrice) {
+            originalPrice = Number.parseFloat(product.fake_price)
+            savingsAmount = (originalPrice - unitPrice) * quantity
+          }
+        }
+
+        const itemTotal = unitPrice * quantity
+        totalAmount += itemTotal
+
+        orderItems.push({
+          product_id,
+          product_name: product.name,
+          quantity,
+          unit_price: unitPrice,
+          total_price: itemTotal,
+          is_flash_sale: isFlashSale,
+          flash_sale_discount_percent: flashSaleDiscountPercent,
+          original_price: originalPrice,
+          savings_amount: savingsAmount,
+          product: {
+            ...product,
+            images: product.images ? product.images.split(",") : [],
+            features: isValidJSON(product.features) ? JSON.parse(product.features) : [],
+            tips: isValidJSON(product.tips) ? JSON.parse(product.tips) : [],
+            available_stock: availableStock,
+          },
+        })
+      }
+
+      // Generate order number
+      const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+
+      // Create Xendit invoice first
+      const invoiceData = {
+        external_id: orderNumber,
+        amount: totalAmount,
+        description: `Order ${orderNumber} - ${orderItems.map((item) => `${item.quantity}x ${item.product_name}`).join(", ")}`,
+        invoice_duration: 86400, // 24 hours
+        customer: {
+          given_names: user.name,
+          email: user.email,
+        },
+        success_redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?order=${orderNumber}`,
+        failure_redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/failed?order=${orderNumber}`,
+        currency: "IDR",
+        items: orderItems.map((item) => ({
+          name: item.product_name,
+          quantity: item.quantity,
+          price: item.unit_price,
+          category: item.product.category_name || "Digital Product",
+        })),
+        customer_notification_preference: {
+          invoice_created: ["email"],
+          invoice_reminder: ["email"],
+          invoice_paid: ["email"],
+          invoice_expired: ["email"],
+        },
+      }
+
+      const invoice = await xenditService.createInvoice(invoiceData)
+
+      // Create order
+      const [orderResult] = await db.execute(
+        `
+        INSERT INTO orders (
+          user_id, order_number, type, total_amount, status, 
+          payment_status, payment_method, xendit_invoice_id, xendit_invoice_url,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, 'pending', 'pending', 'xendit', ?, ?, NOW(), NOW())
+      `,
+        [user.id, orderNumber, type, totalAmount, invoice.id, invoice.invoice_url],
+      )
+
+      const orderId = (orderResult as any).insertId
+
+      // Create order items and reserve accounts
+      for (const item of orderItems) {
+        // Insert order item using existing order_premium_items table
         await db.execute(
-          `INSERT INTO order_premium_items (order_id, product_id, account_id, quantity, price, account_email, account_password, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+          `
+          INSERT INTO order_premium_items (
+            order_id, product_id, quantity, price,
+            is_flash_sale, flash_sale_discount_percent, original_price, savings_amount
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
           [
-        orderId,
-        productId,
-        premiumAccount.id,
-        1,
-        price,
-        premiumAccount.email,
-        premiumAccount.password,
-          ]
+            orderId,
+            item.product_id,
+            item.quantity,
+            item.unit_price,
+            item.is_flash_sale ? 1 : 0,
+            item.flash_sale_discount_percent,
+            item.original_price,
+            item.savings_amount,
+          ],
         )
 
-        // Update status akun agar tidak dipakai lagi
-        await db.execute(
-          `UPDATE premium_accounts SET status = 'sold', sold_at = NOW(), order_id = ? WHERE id = ?`,
-          [orderId, premiumAccount.id]
-        )
-      }
-    } else if (type === "indosmm_service") {
-      for (const item of items) {
-        const [serviceRows] = await db.execute("SELECT user_rate, reseller_rate FROM indosmm_services WHERE id = ?", [
-          item.service_id,
-        ])
-        const services = serviceRows as any[]
-        const rate = user.role === "reseller" ? services[0].reseller_rate : services[0].user_rate
-        const price = (rate * item.quantity) / 1000
+        // Reserve premium accounts (change status from 'available' to 'reserved')
+     await db.execute(
+  `
+    UPDATE premium_accounts 
+    SET status = 'reserved', reserved_for_order_id = ?, updated_at = NOW()
+    WHERE product_id = ? AND status = 'available' 
+    LIMIT ${Number(item.quantity)}
+  `,
+  [
+    orderId,
+    item.product_id,
+  ]
+)
 
-        await db.execute(
-          "INSERT INTO order_indosmm_items (order_id, service_id, target, quantity, price) VALUES (?, ?, ?, ?, ?)",
-          [orderId, item.service_id, item.target, item.quantity, price],
+
+        // Verify that accounts were actually reserved
+        const [reservedCheck] = await db.execute(
+          `
+          SELECT COUNT(*) as reserved_count 
+          FROM premium_accounts 
+          WHERE product_id = ? AND status = 'reserved' AND reserved_for_order_id = ?
+        `,
+          [item.product_id, orderId],
         )
+
+        const reservedCount = (reservedCheck as any[])[0]?.reserved_count || 0
+        if (reservedCount < item.quantity) {
+          throw new Error(
+            `Failed to reserve sufficient accounts for ${item.product_name}. Reserved: ${reservedCount}, Required: ${item.quantity}`,
+          )
+        }
+
+        // Track flash sale analytics if applicable
+        if (item.is_flash_sale) {
+          await db.execute(
+            `
+            INSERT INTO flash_sale_orders (
+              order_id, product_id, quantity, original_price, 
+              flash_sale_price, discount_percent, savings_amount,
+              created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+          `,
+            [
+              orderId,
+              item.product_id,
+              item.quantity,
+              item.original_price,
+              item.unit_price,
+              item.flash_sale_discount_percent,
+              item.savings_amount,
+            ],
+          )
+        }
       }
+
+      // Commit transaction
+      await db.execute("COMMIT")
+
+      // Prepare response
+      const totalSavings = orderItems.reduce((sum, item) => sum + item.savings_amount, 0)
+      const hasFlashSale = orderItems.some((item) => item.is_flash_sale)
+
+      return NextResponse.json({
+        success: true,
+        message: "Order created successfully",
+        order: {
+          id: orderId,
+          order_number: orderNumber,
+          type,
+          total_amount: totalAmount,
+          total_savings: totalSavings,
+          status: "pending",
+          payment_status: "pending",
+          payment_method: "xendit",
+          payment_url: invoice.invoice_url,
+          expires_at: invoice.expiry_date,
+          has_flash_sale: hasFlashSale,
+          items: orderItems.map((item) => ({
+            product_id: item.product_id,
+            product_name: item.product_name,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+            is_flash_sale: item.is_flash_sale,
+            flash_sale_discount_percent: item.flash_sale_discount_percent,
+            original_price: item.original_price,
+            savings_amount: item.savings_amount,
+          })),
+        },
+        invoice: {
+          id: invoice.id,
+          url: invoice.invoice_url,
+          amount: invoice.amount,
+          status: invoice.status,
+          expires_at: invoice.expiry_date,
+        },
+      })
+    } catch (transactionError) {
+      // Rollback transaction on error
+      await db.execute("ROLLBACK")
+      throw transactionError
     }
-
-    return NextResponse.json({
-      message: "Order created successfully",
-      order: {
-        id: orderId,
-        order_number: orderNumber,
-        total_amount: totalAmount,
-        payment_url: xenditInvoice.invoice_url,
-      },
-    })
   } catch (error) {
     console.error("Create order error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to create order",
+        details: process.env.NODE_ENV === "development" ? errorMessage : undefined,
+      },
+      { status: 500 },
+    )
   }
 }

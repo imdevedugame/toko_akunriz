@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
               </p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
                 <li>Buka email Anda</li>
-                <li>Cari email dari Rivazstore</li>
+                <li>Cari email dari Vyloz Premium Zone</li>
                 <li>Klik link "Reset Password"</li>
                 <li>Buat password baru Anda</li>
               </ol>

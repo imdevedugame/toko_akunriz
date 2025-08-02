@@ -32,20 +32,28 @@ export async function GET(
     const orderDetails: any = {}
 if (order.type === "premium_account") {
   const [premiumItems] = await db.execute(
-    `
-    SELECT opi.*, p.name as product_name
-    FROM order_premium_items opi
-    JOIN premium_products p ON opi.product_id = p.id
-    WHERE opi.order_id = ?
+  `
+  SELECT 
+    opi.*, 
+    p.name AS product_name,
+    pa.email AS account_email,
+    pa.password AS account_password,
+    pa.description AS account_description
+  FROM order_premium_items opi
+  JOIN premium_products p ON opi.product_id = p.id
+  JOIN premium_accounts pa ON pa.order_id = opi.order_id AND pa.product_id = opi.product_id
+  WHERE opi.order_id = ?
   `,
-    [order.id],
-  )
+  [order.id]
+)
 
-  orderDetails.premium_accounts = (premiumItems as any[]).map((item) => ({
-    product_name: item.product_name,
-    account_email: item.account_email,
-    account_password: item.account_password,
-  }))
+orderDetails.premium_accounts = (premiumItems as any[]).map((item) => ({
+  product_name: item.product_name,
+  account_email: item.account_email,
+  account_password: item.account_password,
+  account_description: item.account_description || "Tidak ada",
+}))
+
 
 
     } else if (order.type === "indosmm_service") {
