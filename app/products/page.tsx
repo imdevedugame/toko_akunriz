@@ -1,5 +1,6 @@
 "use client"
-import { useState, useEffect } from "react"
+
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -71,16 +72,20 @@ export default function ProductsPage() {
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const categoryScrollRef = useRef<HTMLDivElement>(null)
+
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSearching, setIsSearching] = useState(false)
   const [favorites, setFavorites] = useState<Set<number>>(new Set())
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
 
-  // Get initial values from URL params
+  // Get initial values from URL params - Changed default sort to price-low
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "")
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all")
-  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest")
+  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "price-low")
   const [currentPage, setCurrentPage] = useState(1)
   const [totalProducts, setTotalProducts] = useState(0)
   const itemsPerPage = 12
@@ -103,27 +108,63 @@ export default function ProductsPage() {
         updateURL()
       }
     }, 500)
+
     return () => clearTimeout(timer)
   }, [searchTerm])
+
+  useEffect(() => {
+    // Check scroll position for category buttons
+    checkScrollButtons()
+  }, [categories])
 
   const updateURL = () => {
     const params = new URLSearchParams()
     if (searchTerm) params.set("search", searchTerm)
     if (selectedCategory !== "all") params.set("category", selectedCategory)
-    if (sortBy !== "newest") params.set("sort", sortBy)
+    if (sortBy !== "price-low") params.set("sort", sortBy)
+
     const newURL = `/products${params.toString() ? `?${params.toString()}` : ""}`
     router.replace(newURL, { scroll: false })
+  }
+
+  const checkScrollButtons = () => {
+    if (categoryScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = categoryScrollRef.current
+      setCanScrollLeft(scrollLeft > 0)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+    }
+  }
+
+  const scrollCategories = (direction: "left" | "right") => {
+    if (categoryScrollRef.current) {
+      const scrollAmount = 200
+      const newScrollLeft =
+        direction === "left"
+          ? categoryScrollRef.current.scrollLeft - scrollAmount
+          : categoryScrollRef.current.scrollLeft + scrollAmount
+
+      categoryScrollRef.current.scrollTo({
+        left: newScrollLeft,
+        behavior: "smooth",
+      })
+
+      // Update button states after scroll
+      setTimeout(checkScrollButtons, 300)
+    }
   }
 
   const fetchProducts = async () => {
     try {
       setIsSearching(true)
+
       const params = new URLSearchParams()
       params.append("limit", itemsPerPage.toString())
       params.append("offset", ((currentPage - 1) * itemsPerPage).toString())
+
       if (selectedCategory !== "all") {
         params.append("category", selectedCategory)
       }
+
       if (searchTerm.trim()) {
         params.append("search", searchTerm.trim())
       }
@@ -150,6 +191,7 @@ export default function ProductsPage() {
               return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           }
         })
+
         setProducts(sortedProducts)
         setTotalProducts(data.pagination?.total || sortedProducts.length)
       }
@@ -247,7 +289,9 @@ export default function ProductsPage() {
     const now = new Date().getTime()
     const end = new Date(endDate).getTime()
     const distance = end - now
+
     if (distance < 0) return null
+
     const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
     const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
     return `${hours}j ${minutes}m`
@@ -263,6 +307,7 @@ export default function ProductsPage() {
             <Skeleton className="h-8 w-48 mb-2" />
             <Skeleton className="h-4 w-64" />
           </div>
+
           <div className="mb-6 space-y-4">
             <div className="flex gap-2 overflow-x-auto pb-2">
               {[...Array(4)].map((_, i) => (
@@ -274,6 +319,7 @@ export default function ProductsPage() {
               <Skeleton className="h-10 w-32" />
             </div>
           </div>
+
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {[...Array(itemsPerPage)].map((_, i) => (
               <Card key={i} className="overflow-hidden animate-pulse">
@@ -308,36 +354,75 @@ export default function ProductsPage() {
             {searchTerm ? `Hasil pencarian "${searchTerm}"` : "Pilih produk terbaik dengan harga terjangkau"}
           </p>
         </div>
-        {/* Mobile Categories - Horizontal Scroll */}
+
+        {/* Enhanced Categories with Navigation Arrows */}
         <div className="mb-4">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="relative">
+            {/* Left Arrow */}
             <Button
-              variant={selectedCategory === "all" ? "default" : "outline"}
+              variant="outline"
               size="sm"
-              onClick={() => handleCategorySelect("all")}
-              className={`flex-shrink-0 text-xs ${
-                selectedCategory === "all" ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-white hover:bg-gray-50"
+              className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 p-0 bg-white shadow-md border-gray-200 ${
+                !canScrollLeft ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
               }`}
+              onClick={() => scrollCategories("left")}
+              disabled={!canScrollLeft}
             >
-              Semua
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-            {categories.map((category) => (
-              <Button
-                key={category.id}
-                variant={selectedCategory === category.slug ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleCategorySelect(category.slug)}
-                className={`flex-shrink-0 text-xs ${
-                  selectedCategory === category.slug
-                    ? "bg-amber-500 hover:bg-amber-600 text-white"
-                    : "bg-white hover:bg-gray-50"
-                }`}
+
+            {/* Categories Container */}
+            <div className="mx-10">
+              <div
+                ref={categoryScrollRef}
+                className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-smooth"
+                onScroll={checkScrollButtons}
               >
-                {category.name}
-              </Button>
-            ))}
+                <Button
+                  variant={selectedCategory === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleCategorySelect("all")}
+                  className={`flex-shrink-0 text-xs ${
+                    selectedCategory === "all"
+                      ? "bg-amber-500 hover:bg-amber-600 text-white"
+                      : "bg-white hover:bg-gray-50"
+                  }`}
+                >
+                  Semua
+                </Button>
+                {categories.map((category) => (
+                  <Button
+                    key={category.id}
+                    variant={selectedCategory === category.slug ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleCategorySelect(category.slug)}
+                    className={`flex-shrink-0 text-xs ${
+                      selectedCategory === category.slug
+                        ? "bg-amber-500 hover:bg-amber-600 text-white"
+                        : "bg-white hover:bg-gray-50"
+                    }`}
+                  >
+                    {category.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Arrow */}
+            <Button
+              variant="outline"
+              size="sm"
+              className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 p-0 bg-white shadow-md border-gray-200 ${
+                !canScrollRight ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
+              }`}
+              onClick={() => scrollCategories("right")}
+              disabled={!canScrollRight}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
+
         {/* Search and Filters */}
         <Card className="mb-4 shadow-sm">
           <CardContent className="p-4">
@@ -357,20 +442,22 @@ export default function ProductsPage() {
                     </div>
                   )}
                 </div>
+
                 <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-full sm:w-40 h-10 border-gray-200">
                     <SelectValue placeholder="Urutkan" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Terbaru</SelectItem>
-                    <SelectItem value="name">Nama A-Z</SelectItem>
+                  <SelectContent className="bg-white">
                     <SelectItem value="price-low">Harga Terendah</SelectItem>
                     <SelectItem value="price-high">Harga Tertinggi</SelectItem>
+                    <SelectItem value="newest">Terbaru</SelectItem>
+                    <SelectItem value="name">Nama A-Z</SelectItem>
                     <SelectItem value="stock">Stok Terbanyak</SelectItem>
                     <SelectItem value="rating">Rating Tertinggi</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs text-gray-600">
                   <Package className="h-3 w-3" />
@@ -388,6 +475,7 @@ export default function ProductsPage() {
             </div>
           </CardContent>
         </Card>
+
         {/* Products Grid - Shopee Style */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
           {products.map((product, index) => {
@@ -423,8 +511,10 @@ export default function ProductsPage() {
 
                     {/* Enhanced Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 sm:duration-500"></div>
+
                     {/* Floating Background Elements */}
                     <div className="absolute -top-6 -right-6 sm:-top-10 sm:-right-10 w-16 h-16 sm:w-32 sm:h-32 bg-gradient-to-br from-amber-400/20 to-orange-400/30 rounded-full blur-xl sm:blur-2xl group-hover:scale-125 sm:group-hover:scale-150 transition-transform duration-500 sm:duration-700"></div>
+
                     {/* Top Badges */}
                     <div className="absolute top-2 sm:top-3 lg:top-4 left-2 sm:left-3 lg:left-4 flex flex-col gap-1 sm:gap-2 lg:gap-3">
                       {product.is_flash_sale_active ? (
@@ -433,15 +523,16 @@ export default function ProductsPage() {
                           <span className="hidden sm:inline">FLASH SALE</span>
                           <span className="sm:hidden">⚡</span>
                         </Badge>
-          ): null}
-                      {/* Removed 'Featured' badge as it's not used in ProductsPage context */}
+                      ) : null}
+
                       <Badge
                         className={`${stockStatus.color} text-white font-semibold px-2 py-1 sm:px-3 sm:py-1 lg:px-4 lg:py-2 shadow-md sm:shadow-lg lg:shadow-xl text-xs sm:text-xs`}
                       >
-                        <StockIcon className="h-2 w-2 sm:h-s3 sm:w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2" />
+                        <StockIcon className="h-2 w-2 sm:h-3 sm:w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2" />
                         {stockStatus.text}
                       </Badge>
                     </div>
+
                     {/* Discount Badge */}
                     {discountPercent > 0 && (
                       <div className="absolute top-2 sm:top-3 lg:top-4 right-2 sm:right-3 lg:right-4">
@@ -456,6 +547,7 @@ export default function ProductsPage() {
                         </Badge>
                       </div>
                     )}
+
                     {/* Flash Sale Timer */}
                     {product.is_flash_sale_active && product.flash_sale_end && timeRemaining ? (
                       <div className="absolute bottom-2 left-2 right-2">
@@ -464,8 +556,9 @@ export default function ProductsPage() {
                           Berakhir dalam {timeRemaining}
                         </div>
                       </div>
-                    ):null}
+                    ) : null}
                   </div>
+
                   {/* Enhanced Product Info */}
                   <div className="p-3 sm:p-3 md:p-4 relative">
                     {/* Category & Rating */}
@@ -493,14 +586,17 @@ export default function ProductsPage() {
                         <span className="text-xs sm:text-xs text-gray-600 font-medium">{product.rating || 4.5}</span>
                       </div>
                     </div>
+
                     {/* Product Name */}
                     <h3 className="font-bold text-sm sm:text-base md:text-base mb-2 sm:mb-3 line-clamp-2 group-hover:text-amber-700 transition-colors leading-tight">
                       {product.name}
                     </h3>
+
                     {/* Description - Hidden on mobile */}
                     <p className="text-gray-600 mb-3 sm:mb-4 line-clamp-2 leading-relaxed text-xs sm:text-sm hidden sm:block">
                       {product.description}
                     </p>
+
                     {/* Stock Info */}
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div className="flex items-center text-xs sm:text-xs text-gray-500 bg-gray-50 px-2 py-1 sm:px-3 sm:py-2 rounded-full">
@@ -516,6 +612,7 @@ export default function ProductsPage() {
                         </div>
                       )}
                     </div>
+
                     {/* Enhanced Pricing */}
                     <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg sm:rounded-xl">
                       <div className="flex items-end justify-between">
@@ -546,6 +643,7 @@ export default function ProductsPage() {
                         )}
                       </div>
                     </div>
+
                     {/* Enhanced Action Button */}
                     <Button
                       asChild
@@ -576,6 +674,7 @@ export default function ProductsPage() {
                         )}
                       </Link>
                     </Button>
+
                     {/* Mobile Favorite Button - Kept for functionality, can be removed if not desired */}
                     <div className="mt-2 sm:hidden">
                       <Button
@@ -592,6 +691,7 @@ export default function ProductsPage() {
                         {favorites.has(product.id) ? "Favorit" : "Tambah Favorit"}
                       </Button>
                     </div>
+
                     {/* Enhanced Trust Indicator - Hidden on mobile */}
                     {product.stock > 0 && (
                       <div className="mt-3 sm:mt-4 text-center hidden sm:block">
@@ -603,6 +703,7 @@ export default function ProductsPage() {
                       </div>
                     )}
                   </div>
+
                   {/* Enhanced Hover Effect Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-amber-600/5 via-orange-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 sm:duration-500 pointer-events-none"></div>
                 </CardContent>
@@ -610,6 +711,7 @@ export default function ProductsPage() {
             )
           })}
         </div>
+
         {/* Empty State */}
         {products.length === 0 && !isLoading && (
           <div className="text-center py-12">
@@ -635,6 +737,7 @@ export default function ProductsPage() {
             </div>
           </div>
         )}
+
         {/* Mobile-Friendly Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center mt-8">
@@ -648,6 +751,7 @@ export default function ProductsPage() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
+
               <div className="flex items-center space-x-1">
                 {[...Array(Math.min(3, totalPages))].map((_, i) => {
                   const pageNum = i + 1
@@ -665,6 +769,7 @@ export default function ProductsPage() {
                     </Button>
                   )
                 })}
+
                 {totalPages > 3 && currentPage < totalPages - 1 && (
                   <>
                     <span className="text-gray-500 px-1">...</span>
@@ -679,6 +784,7 @@ export default function ProductsPage() {
                   </>
                 )}
               </div>
+
               <Button
                 variant="outline"
                 size="sm"
@@ -692,6 +798,7 @@ export default function ProductsPage() {
           </div>
         )}
       </div>
+
       <style jsx>{`
         @keyframes fade-in-up {
           from {

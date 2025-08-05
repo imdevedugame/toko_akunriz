@@ -243,7 +243,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
               <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="today">Hari Ini</SelectItem>
                 <SelectItem value="yesterday">Kemarin</SelectItem>
                 <SelectItem value="last7days">7 Hari Terakhir</SelectItem>

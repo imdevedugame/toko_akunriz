@@ -300,7 +300,7 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id.toString()}>
                       {category.name}
@@ -337,7 +337,7 @@ export function ProductForm({ product, onSubmit, onCancel }: ProductFormProps) {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>

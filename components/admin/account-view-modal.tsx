@@ -4,8 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Copy, Eye, EyeOff } from "lucide-react"
-import { useState } from "react"
+import { Copy, Eye, EyeOff, Users } from "lucide-react"
+import { useState, useEffect } from "react"
 
 interface Account {
   id: number
@@ -16,6 +16,23 @@ interface Account {
   status: string
   sold_at: string | null
   created_at: string
+  duplicate_group_id: string | null
+  duplicate_count: number
+  original_account_id: number | null
+  duplicate_index: number
+}
+
+interface DuplicateStats {
+  total: number
+  available: number
+  reserved: number
+  sold: number
+  duplicates: Array<{
+    id: number
+    status: string
+    duplicate_index: number
+    sold_at: string | null
+  }>
 }
 
 interface AccountViewModalProps {
@@ -26,6 +43,31 @@ interface AccountViewModalProps {
 
 export function AccountViewModal({ account, isOpen, onClose }: AccountViewModalProps) {
   const [showPassword, setShowPassword] = useState(false)
+  const [duplicateStats, setDuplicateStats] = useState<DuplicateStats | null>(null)
+  const [isLoadingStats, setIsLoadingStats] = useState(false)
+
+  useEffect(() => {
+    if (isOpen && account.duplicate_group_id) {
+      fetchDuplicateStats()
+    }
+  }, [isOpen, account.duplicate_group_id])
+
+  const fetchDuplicateStats = async () => {
+    if (!account.duplicate_group_id) return
+
+    setIsLoadingStats(true)
+    try {
+      const response = await fetch(`/api/admin/accounts/duplicate-stats/${account.duplicate_group_id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setDuplicateStats(data.stats)
+      }
+    } catch (error) {
+      console.error("Failed to fetch duplicate stats:", error)
+    } finally {
+      setIsLoadingStats(false)
+    }
+  }
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
@@ -47,9 +89,16 @@ export function AccountViewModal({ account, isOpen, onClose }: AccountViewModalP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md bg-white">
+      <DialogContent className=" bg-white max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Account Details</DialogTitle>
+          <DialogTitle className="flex items-center space-x-2">
+            <span>Account Details</span>
+            {account.duplicate_group_id && (
+              <Badge variant="outline" className="ml-2">
+                {account.original_account_id ? `Duplicate #${account.duplicate_index}` : "Original"}
+              </Badge>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -100,6 +149,76 @@ export function AccountViewModal({ account, isOpen, onClose }: AccountViewModalP
               </div>
             </CardContent>
           </Card>
+
+          {/* Duplicate Information */}
+          {account.duplicate_group_id && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center space-x-2">
+                  <Users className="h-5 w-5" />
+                  <span>Duplicate Information</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                  </div>
+                ) : duplicateStats ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-4 gap-4 text-center">
+                      <div className="bg-blue-50 p-3 rounded">
+                        <div className="text-2xl font-bold text-blue-600">{duplicateStats.total}</div>
+                        <div className="text-sm text-blue-600">Total</div>
+                      </div>
+                      <div className="bg-green-50 p-3 rounded">
+                        <div className="text-2xl font-bold text-green-600">{duplicateStats.available}</div>
+                        <div className="text-sm text-green-600">Available</div>
+                      </div>
+                      <div className="bg-yellow-50 p-3 rounded">
+                        <div className="text-2xl font-bold text-yellow-600">{duplicateStats.reserved}</div>
+                        <div className="text-sm text-yellow-600">Reserved</div>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-2xl font-bold text-gray-600">{duplicateStats.sold}</div>
+                        <div className="text-sm text-gray-600">Sold</div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium mb-2">All Duplicates:</h4>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {duplicateStats.duplicates.map((duplicate) => (
+                          <div
+                            key={duplicate.id}
+                            className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm"
+                          >
+                            <span>
+                              {duplicate.duplicate_index === 0 ? "Original" : `Duplicate #${duplicate.duplicate_index}`}
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              <Badge variant={getStatusColor(duplicate.status)} className="text-xs">
+                                {duplicate.status}
+                              </Badge>
+                              {duplicate.sold_at && (
+                                <span className="text-xs text-gray-500">
+                                  Sold: {new Date(duplicate.sold_at).toLocaleDateString("id-ID")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">Failed to load duplicate information</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex justify-end">
             <Button onClick={onClose}>Close</Button>

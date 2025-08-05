@@ -214,7 +214,7 @@ export default function AdminUsersPage() {
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="reseller">Reseller</SelectItem>
@@ -226,7 +226,7 @@ export default function AdminUsersPage() {
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="suspended">Suspended</SelectItem>

@@ -38,7 +38,13 @@ export async function GET(request: NextRequest) {
         opi.account_password,
         p.name as product_name,
         p.slug as product_slug,
-        c.name as category_name
+        c.name as category_name,
+        CASE 
+          WHEN o.status = 'pending' AND o.expires_at < NOW() THEN 'expired'
+          WHEN o.status = 'pending' AND o.expires_at >= NOW() THEN 'active'
+          ELSE o.status
+        END as display_status,
+        TIMESTAMPDIFF(MINUTE, NOW(), o.expires_at) as minutes_until_expiry
       FROM orders o
       LEFT JOIN order_premium_items opi ON o.id = opi.order_id
       LEFT JOIN premium_products p ON opi.product_id = p.id
@@ -49,8 +55,12 @@ export async function GET(request: NextRequest) {
     const queryParams: any[] = [user.id]
 
     if (status && status !== "all") {
-      query += " AND o.status = ?"
-      queryParams.push(status)
+      if (status === "expired") {
+        query += " AND o.status = 'pending' AND o.expires_at < NOW()"
+      } else {
+        query += " AND o.status = ?"
+        queryParams.push(status)
+      }
     }
 
     query += ` ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}`
@@ -68,12 +78,18 @@ export async function GET(request: NextRequest) {
           type: row.type,
           total_amount: Number.parseFloat(row.total_amount),
           status: row.status,
+          display_status: row.display_status,
           payment_method: row.payment_method || "xendit",
           payment_status: row.payment_status || "pending",
           xendit_invoice_id: row.xendit_invoice_id,
           xendit_invoice_url: row.xendit_invoice_url,
+          expires_at: row.expires_at,
+          minutes_until_expiry: row.minutes_until_expiry,
+          auto_cancelled_at: row.auto_cancelled_at,
+          cancellation_reason: row.cancellation_reason,
           created_at: row.created_at,
           updated_at: row.updated_at,
+          can_cancel: row.status === "pending" && row.display_status === "active" && row.minutes_until_expiry > 0,
           items: [],
         }
       }
@@ -133,9 +149,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Start transaction
+    // Start transaction using query instead of execute
     await db.query("START TRANSACTION")
-
 
     try {
       let totalAmount = 0
@@ -246,12 +261,15 @@ export async function POST(request: NextRequest) {
       // Generate order number
       const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
+      // Calculate expiry time (1 hour from now)
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
       // Create Xendit invoice first
       const invoiceData = {
         external_id: orderNumber,
         amount: totalAmount,
         description: `Order ${orderNumber} - ${orderItems.map((item) => `${item.quantity}x ${item.product_name}`).join(", ")}`,
-        invoice_duration: 86400, // 24 hours
+        invoice_duration: 3600, // 1 hour in seconds
         customer: {
           given_names: user.name,
           email: user.email,
@@ -281,10 +299,10 @@ export async function POST(request: NextRequest) {
         INSERT INTO orders (
           user_id, order_number, type, total_amount, status, 
           payment_status, payment_method, xendit_invoice_id, xendit_invoice_url,
-          created_at, updated_at
-        ) VALUES (?, ?, ?, ?, 'pending', 'pending', 'xendit', ?, ?, NOW(), NOW())
+          expires_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, 'pending', 'pending', 'xendit', ?, ?, ?, NOW(), NOW())
       `,
-        [user.id, orderNumber, type, totalAmount, invoice.id, invoice.invoice_url],
+        [user.id, orderNumber, type, totalAmount, invoice.id, invoice.invoice_url, expiresAt],
       )
 
       const orderId = (orderResult as any).insertId
@@ -312,17 +330,14 @@ export async function POST(request: NextRequest) {
         )
 
         // Reserve premium accounts (change status from 'available' to 'reserved')
-     await db.execute(
+       await db.execute(
   `
-    UPDATE premium_accounts 
-    SET status = 'reserved', reserved_for_order_id = ?, updated_at = NOW()
-    WHERE product_id = ? AND status = 'available' 
-    LIMIT ${Number(item.quantity)}
-  `,
-  [
-    orderId,
-    item.product_id,
-  ]
+  UPDATE premium_accounts 
+  SET status = 'reserved', reserved_for_order_id = ?, updated_at = NOW()
+  WHERE product_id = ? AND status = 'available' 
+  LIMIT ${item.quantity}
+`,
+  [orderId, item.product_id],
 )
 
 
@@ -366,12 +381,14 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Commit transaction
-      await db.execute("COMMIT")
+      // Commit transaction using query instead of execute
+      await db.query("COMMIT")
 
       // Prepare response
       const totalSavings = orderItems.reduce((sum, item) => sum + item.savings_amount, 0)
       const hasFlashSale = orderItems.some((item) => item.is_flash_sale)
+
+      console.log(`✅ Order created successfully: ${orderNumber}, expires at: ${expiresAt.toISOString()}`)
 
       return NextResponse.json({
         success: true,
@@ -386,8 +403,10 @@ export async function POST(request: NextRequest) {
           payment_status: "pending",
           payment_method: "xendit",
           payment_url: invoice.invoice_url,
-          expires_at: invoice.expiry_date,
+          expires_at: expiresAt.toISOString(),
+          minutes_until_expiry: 60,
           has_flash_sale: hasFlashSale,
+          can_cancel: true,
           items: orderItems.map((item) => ({
             product_id: item.product_id,
             product_name: item.product_name,
@@ -409,8 +428,8 @@ export async function POST(request: NextRequest) {
         },
       })
     } catch (transactionError) {
-      // Rollback transaction on error
-      await db.execute("ROLLBACK")
+      // Rollback transaction on error using query instead of execute
+      await db.query("ROLLBACK")
       throw transactionError
     }
   } catch (error) {
