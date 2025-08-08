@@ -17,7 +17,7 @@ export function MainNav({ className, ...props }: MainNavProps) {
           <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-sm">PS</span>
           </div>
-          <span className="font-bold">Rivazstore</span>
+          <span className="font-bold">Vyloz Premium Zone</span>
         </div>
       </Link>
     </nav>

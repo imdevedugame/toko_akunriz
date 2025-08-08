@@ -94,7 +94,7 @@ export function BulkAccountUpload({ products, onSuccess, onCancel }: BulkAccount
             Instructions
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 ">
           <ol className="list-decimal list-inside space-y-2 text-sm">
             <li>Download the CSV template below</li>
             <li>Fill in the email and password columns</li>
@@ -117,7 +117,7 @@ export function BulkAccountUpload({ products, onSuccess, onCancel }: BulkAccount
             <SelectTrigger>
               <SelectValue placeholder="Select product" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white ">
               {products.map((product) => (
                 <SelectItem key={product.id} value={product.id.toString()}>
                   {product.name}

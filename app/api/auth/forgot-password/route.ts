@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     // Send email
     const emailResult = await sendEmail({
       to: user.email,
-      subject: "Reset Password - Rivazstore",
+      subject: "Reset Password - Vyloz Premium Zone",
       html,
       text,
     })

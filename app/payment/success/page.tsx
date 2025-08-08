@@ -5,7 +5,20 @@ import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Copy, Eye, EyeOff, Download, Home } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  CheckCircle,
+  Copy,
+  Eye,
+  EyeOff,
+  Download,
+  Home,
+  Instagram,
+  MessageCircle,
+  FileText,
+  X,
+  AlertTriangle,
+} from "lucide-react"
 import Link from "next/link"
 
 interface OrderDetails {
@@ -20,13 +33,6 @@ interface OrderDetails {
     account_email: string
     account_password: string
   }>
-  indosmm_orders?: Array<{
-    service_name: string
-    target: string
-    quantity: number
-    indosmm_order_id: string
-    indosmm_status: string
-  }>
 }
 
 export default function PaymentSuccessPage() {
@@ -35,12 +41,20 @@ export default function PaymentSuccessPage() {
   const [order, setOrder] = useState<OrderDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [showPasswords, setShowPasswords] = useState<{ [key: number]: boolean }>({})
+  const [showNetflixPopup, setShowNetflixPopup] = useState(false)
 
   useEffect(() => {
     if (orderNumber) {
       fetchOrderDetails()
     }
   }, [orderNumber])
+
+  useEffect(() => {
+    // Show popup without any conditions
+    if (order) {
+      setShowNetflixPopup(true)
+    }
+  }, [order])
 
   const fetchOrderDetails = async () => {
     try {
@@ -178,7 +192,6 @@ export default function PaymentSuccessPage() {
               {order.premium_accounts.map((account, index) => (
                 <div key={index} className="border rounded-lg p-4 bg-green-50">
                   <h4 className="font-semibold text-lg mb-4">{account.product_name}</h4>
-
                   <div className="space-y-3">
                     <div>
                       <label className="text-sm font-medium text-gray-600">Email</label>
@@ -191,7 +204,6 @@ export default function PaymentSuccessPage() {
                         </Button>
                       </div>
                     </div>
-
                     <div>
                       <label className="text-sm font-medium text-gray-600">Password</label>
                       <div className="flex items-center space-x-2 mt-1">
@@ -226,51 +238,10 @@ export default function PaymentSuccessPage() {
           </Card>
         )}
 
-        {/* IndoSMM Orders */}
-        {order.indosmm_orders && order.indosmm_orders.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Pesanan IndoSMM</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {order.indosmm_orders.map((indoOrder, index) => (
-                <div key={index} className="border rounded-lg p-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Layanan</label>
-                      <p className="font-medium">{indoOrder.service_name}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Target</label>
-                      <p className="font-mono text-sm">{indoOrder.target}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Jumlah</label>
-                      <p>{indoOrder.quantity.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Status</label>
-                      <Badge variant={indoOrder.indosmm_status === "completed" ? "default" : "secondary"}>
-                        {indoOrder.indosmm_status}
-                      </Badge>
-                    </div>
-                  </div>
-                  {indoOrder.indosmm_order_id && (
-                    <div className="mt-3">
-                      <label className="text-sm font-medium text-gray-500">Order ID IndoSMM</label>
-                      <p className="font-mono text-sm">{indoOrder.indosmm_order_id}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Link href="/history" className="flex-1">
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full bg-transparent">
               Lihat Riwayat Pesanan
             </Button>
           </Link>
@@ -282,6 +253,95 @@ export default function PaymentSuccessPage() {
           </Link>
         </div>
       </div>
+
+      {/* Netflix Private Account Popup */}
+      <Dialog open={showNetflixPopup} onOpenChange={setShowNetflixPopup}>
+        <DialogContent className="max-w-md mx-auto bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200">
+          <DialogHeader className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-lg">NETFLIX PRIVATE</div>
+            </div>
+            <DialogTitle className="text-xl font-bold text-red-800">Informasi Penting</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Description */}
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center mb-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
+                <h3 className="font-bold text-yellow-800">WAJIB DI BACA !!</h3>
+              </div>
+              <p className="text-sm text-yellow-700 mb-3">
+                Syarat dan Ketentuan dibawah ini wajib ditaati, apabila melanggar maka garansi hangus.
+              </p>
+              <div className="text-center">
+                <p className="text-sm font-medium text-yellow-800 mb-2">Download dan baca ⬇️</p>
+                <Button variant="outline" size="sm" className="bg-white">
+                  <FileText className="h-4 w-4 mr-2" />
+                  {"[ File ]"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Thank You Message */}
+            <div className="text-center bg-green-50 border-2 border-green-200 rounded-lg p-4">
+              <p className="font-semibold text-green-800 mb-3">Terimakasih telah order di Vyloz Zone!</p>
+              <p className="text-sm text-green-700 mb-4">
+                Tidak ingin tertinggal informasi terbaru serta seputar Giveaway dan Promo menarik? Follow Instagram
+                @vylozzone
+              </p>
+
+              {/* Social Media Links */}
+              <div className="flex justify-center space-x-4 mb-4">
+                <Link
+                  href="https://www.instagram.com/vylozzone?igsh=bzdrNnR6N281eGUz"
+                  target="_blank"
+                  className="flex items-center bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
+                >
+                  <Instagram className="h-4 w-4 mr-2" />
+                  Follow Instagram
+                </Link>
+              </div>
+            </div>
+
+            {/* WhatsApp Contact */}
+            <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+              <div className="flex items-center mb-3">
+                <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+                <h3 className="font-bold text-red-800">WAJIB !!</h3>
+              </div>
+              <p className="text-sm text-red-700 mb-3">
+                Semua pembeli wajib ScreenShot halaman ini lalu kirimkan foto bukti screenshot ke nomor admin dibawah
+                ini :
+              </p>
+              <div className="text-center">
+                <Link
+                  href="https://wa.me/6289630375723"
+                  target="_blank"
+                  className="inline-flex items-center bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all"
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Kirim Screenshot ke Admin
+                </Link>
+              </div>
+              <p className="text-xs text-red-600 font-bold mt-3 text-center">
+                JIKA PEMBELI TIDAK MENGIRIM MAKA GARANSI HANGUS.
+              </p>
+            </div>
+
+            {/* Close Button */}
+            <div className="text-center">
+              <Button
+                onClick={() => setShowNetflixPopup(false)}
+                className="bg-red-600 hover:bg-red-700 text-white px-6 py-2"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Tutup
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

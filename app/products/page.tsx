@@ -1,13 +1,30 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, Filter, ShoppingCart, Star, Crown, Package, Heart, ChevronLeft, ChevronRight } from "lucide-react"
+import {
+  Search,
+  Filter,
+  ShoppingCart,
+  Star,
+  Crown,
+  Package,
+  Heart,
+  ChevronLeft,
+  ChevronRight,
+  Zap,
+  TrendingUp,
+  Shield,
+  Clock,
+  Sparkles,
+  Timer,
+  ImageOff,
+} from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useAuth } from "@/components/auth-provider"
@@ -22,10 +39,16 @@ interface Product {
   category_slug: string
   user_price: number
   reseller_price: number
+  fake_price?: number
   stock: number
   images: string[]
   rating?: number
   created_at: string
+  is_flash_sale?: boolean
+  is_flash_sale_active?: boolean
+  flash_sale_price?: number
+  flash_sale_discount_percent?: number
+  flash_sale_end?: string
 }
 
 interface Category {
@@ -49,20 +72,22 @@ export default function ProductsPage() {
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const categoryScrollRef = useRef<HTMLDivElement>(null)
+
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSearching, setIsSearching] = useState(false)
   const [favorites, setFavorites] = useState<Set<number>>(new Set())
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
 
-  // Get initial values from URL params
+  // Get initial values from URL params - Changed default sort to price-low
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "")
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all")
-  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest")
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "price-low")
   const [currentPage, setCurrentPage] = useState(1)
   const [totalProducts, setTotalProducts] = useState(0)
-
   const itemsPerPage = 12
 
   useEffect(() => {
@@ -87,19 +112,51 @@ export default function ProductsPage() {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
+  useEffect(() => {
+    // Check scroll position for category buttons
+    checkScrollButtons()
+  }, [categories])
+
   const updateURL = () => {
     const params = new URLSearchParams()
     if (searchTerm) params.set("search", searchTerm)
     if (selectedCategory !== "all") params.set("category", selectedCategory)
-    if (sortBy !== "newest") params.set("sort", sortBy)
+    if (sortBy !== "price-low") params.set("sort", sortBy)
 
     const newURL = `/products${params.toString() ? `?${params.toString()}` : ""}`
     router.replace(newURL, { scroll: false })
   }
 
+  const checkScrollButtons = () => {
+    if (categoryScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = categoryScrollRef.current
+      setCanScrollLeft(scrollLeft > 0)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+    }
+  }
+
+  const scrollCategories = (direction: "left" | "right") => {
+    if (categoryScrollRef.current) {
+      const scrollAmount = 200
+      const newScrollLeft =
+        direction === "left"
+          ? categoryScrollRef.current.scrollLeft - scrollAmount
+          : categoryScrollRef.current.scrollLeft + scrollAmount
+
+      categoryScrollRef.current.scrollTo({
+        left: newScrollLeft,
+        behavior: "smooth",
+      })
+
+      // Update button states after scroll
+      setTimeout(checkScrollButtons, 300)
+    }
+  }
+
   const fetchProducts = async () => {
     try {
       setIsSearching(true)
+
       const params = new URLSearchParams()
       params.append("limit", itemsPerPage.toString())
       params.append("offset", ((currentPage - 1) * itemsPerPage).toString())
@@ -167,13 +224,31 @@ export default function ProductsPage() {
   }
 
   const getPrice = (product: Product) => {
+    if (product.is_flash_sale_active && product.flash_sale_price) {
+      return user?.role === "reseller" ? product.reseller_price : product.flash_sale_price
+    }
     return user?.role === "reseller" ? product.reseller_price : product.user_price
   }
 
+  const getOriginalPrice = (product: Product) => {
+    if (product.is_flash_sale_active) {
+      return product.user_price
+    }
+    if (product.fake_price && product.fake_price > product.user_price) {
+      return product.fake_price
+    }
+    return user?.role === "reseller" ? product.user_price : null
+  }
+
   const getDiscountPercentage = (product: Product) => {
+    if (product.is_flash_sale_active && product.flash_sale_discount_percent) {
+      return product.flash_sale_discount_percent
+    }
+    if (product.fake_price && product.fake_price > product.user_price) {
+      return Math.round(((product.fake_price - product.user_price) / product.fake_price) * 100)
+    }
     if (user?.role === "reseller") {
-      const discount = ((product.user_price - product.reseller_price) / product.user_price) * 100
-      return Math.round(discount)
+      return Math.round(((product.user_price - product.reseller_price) / product.user_price) * 100)
     }
     return 0
   }
@@ -201,13 +276,25 @@ export default function ProductsPage() {
   }
 
   const getStockStatus = (stock: number) => {
-    if (stock === 0) return { text: "Habis", color: "bg-red-500", icon: Package }
-    if (stock < 10) return { text: "Terbatas", color: "bg-orange-500", icon: Package }
-    return { text: "Tersedia", color: "bg-green-500", icon: Package }
+    if (stock === 0) return { text: "Habis", color: "bg-gradient-to-r from-red-500 to-red-600", icon: Package }
+    if (stock < 10) return { text: "Terbatas", color: "bg-gradient-to-r from-orange-500 to-amber-500", icon: Clock }
+    return { text: "Tersedia", color: "bg-gradient-to-r from-green-500 to-emerald-500", icon: Package }
   }
 
   const getCategoryColor = (category: string) => {
     return categoryColors[category as keyof typeof categoryColors] || categoryColors.default
+  }
+
+  const getTimeRemaining = (endDate: string) => {
+    const now = new Date().getTime()
+    const end = new Date(endDate).getTime()
+    const distance = end - now
+
+    if (distance < 0) return null
+
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
+    return `${hours}j ${minutes}m`
   }
 
   const totalPages = Math.ceil(totalProducts / itemsPerPage)
@@ -220,6 +307,7 @@ export default function ProductsPage() {
             <Skeleton className="h-8 w-48 mb-2" />
             <Skeleton className="h-4 w-64" />
           </div>
+
           <div className="mb-6 space-y-4">
             <div className="flex gap-2 overflow-x-auto pb-2">
               {[...Array(4)].map((_, i) => (
@@ -231,8 +319,9 @@ export default function ProductsPage() {
               <Skeleton className="h-10 w-32" />
             </div>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[...Array(8)].map((_, i) => (
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {[...Array(itemsPerPage)].map((_, i) => (
               <Card key={i} className="overflow-hidden animate-pulse">
                 <CardContent className="p-0">
                   <Skeleton className="h-32 sm:h-40 w-full" />
@@ -266,34 +355,71 @@ export default function ProductsPage() {
           </p>
         </div>
 
-        {/* Mobile Categories - Horizontal Scroll */}
+        {/* Enhanced Categories with Navigation Arrows */}
         <div className="mb-4">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="relative">
+            {/* Left Arrow */}
             <Button
-              variant={selectedCategory === "all" ? "default" : "outline"}
+              variant="outline"
               size="sm"
-              onClick={() => handleCategorySelect("all")}
-              className={`flex-shrink-0 text-xs ${
-                selectedCategory === "all" ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-white hover:bg-gray-50"
+              className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 p-0 bg-white shadow-md border-gray-200 ${
+                !canScrollLeft ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
               }`}
+              onClick={() => scrollCategories("left")}
+              disabled={!canScrollLeft}
             >
-              Semua
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-            {categories.map((category) => (
-              <Button
-                key={category.id}
-                variant={selectedCategory === category.slug ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleCategorySelect(category.slug)}
-                className={`flex-shrink-0 text-xs ${
-                  selectedCategory === category.slug
-                    ? "bg-amber-500 hover:bg-amber-600 text-white"
-                    : "bg-white hover:bg-gray-50"
-                }`}
+
+            {/* Categories Container */}
+            <div className="mx-10">
+              <div
+                ref={categoryScrollRef}
+                className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-smooth"
+                onScroll={checkScrollButtons}
               >
-                {category.name}
-              </Button>
-            ))}
+                <Button
+                  variant={selectedCategory === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleCategorySelect("all")}
+                  className={`flex-shrink-0 text-xs ${
+                    selectedCategory === "all"
+                      ? "bg-amber-500 hover:bg-amber-600 text-white"
+                      : "bg-white hover:bg-gray-50"
+                  }`}
+                >
+                  Semua
+                </Button>
+                {categories.map((category) => (
+                  <Button
+                    key={category.id}
+                    variant={selectedCategory === category.slug ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleCategorySelect(category.slug)}
+                    className={`flex-shrink-0 text-xs ${
+                      selectedCategory === category.slug
+                        ? "bg-amber-500 hover:bg-amber-600 text-white"
+                        : "bg-white hover:bg-gray-50"
+                    }`}
+                  >
+                    {category.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Arrow */}
+            <Button
+              variant="outline"
+              size="sm"
+              className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 p-0 bg-white shadow-md border-gray-200 ${
+                !canScrollRight ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
+              }`}
+              onClick={() => scrollCategories("right")}
+              disabled={!canScrollRight}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
@@ -316,15 +442,16 @@ export default function ProductsPage() {
                     </div>
                   )}
                 </div>
+
                 <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-full sm:w-40 h-10 border-gray-200">
                     <SelectValue placeholder="Urutkan" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Terbaru</SelectItem>
-                    <SelectItem value="name">Nama A-Z</SelectItem>
+                  <SelectContent className="bg-white">
                     <SelectItem value="price-low">Harga Terendah</SelectItem>
                     <SelectItem value="price-high">Harga Tertinggi</SelectItem>
+                    <SelectItem value="newest">Terbaru</SelectItem>
+                    <SelectItem value="name">Nama A-Z</SelectItem>
                     <SelectItem value="stock">Stok Terbanyak</SelectItem>
                     <SelectItem value="rating">Rating Tertinggi</SelectItem>
                   </SelectContent>
@@ -350,77 +477,105 @@ export default function ProductsPage() {
         </Card>
 
         {/* Products Grid - Shopee Style */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {products.map((product) => {
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+          {products.map((product, index) => {
             const stockStatus = getStockStatus(product.stock)
+            const StockIcon = stockStatus.icon
+            const originalPrice = getOriginalPrice(product)
+            const currentPrice = getPrice(product)
+            const discountPercent = getDiscountPercentage(product)
+            const timeRemaining = product.flash_sale_end ? getTimeRemaining(product.flash_sale_end) : null
+
             return (
               <Card
                 key={product.id}
-                className="group hover:shadow-md transition-shadow duration-200 overflow-hidden bg-white border border-gray-200"
+                className="group hover:shadow-lg sm:hover:shadow-xl lg:hover:shadow-2xl transition-all duration-500 sm:duration-700 overflow-hidden border-0 shadow-md sm:shadow-lg lg:shadow-xl hover:-translate-y-1 sm:hover:-translate-y-2 lg:hover:-translate-y-4 bg-white/95 backdrop-blur-sm relative hover:rotate-0 sm:hover:rotate-1 animate-fade-in-up"
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <CardContent className="p-0">
-                  <Link href={`/product/${product.id}`}>
-                    <div className="relative">
+                  {/* Product Image */}
+                  <div className="relative overflow-hidden bg-gradient-to-br from-amber-50 to-orange-50">
+                    {product.images[0] ? (
                       <Image
-                        src={product.images[0] || "/placeholder.svg?height=160&width=160"}
+                        src={product.images[0] || "/placeholder.svg"}
                         alt={product.name}
-                        width={160}
+                        width={240}
                         height={160}
-                        className="w-full h-32 sm:h-40 object-cover group-hover:scale-105 transition-transform duration-200"
+                        className="w-full h-32 sm:h-40 lg:h-48 object-cover transition-all duration-500 sm:duration-700 group-hover:scale-105 sm:group-hover:scale-110"
                       />
-
-                      {/* Stock Badge */}
-                      <div className="absolute top-2 left-2">
-                        <Badge className={`${stockStatus.color} text-white text-xs px-2 py-1`}>
-                          {stockStatus.text}
-                        </Badge>
+                    ) : (
+                      <div className="w-full h-32 sm:h-40 lg:h-48 flex items-center justify-center bg-gray-100 text-gray-400">
+                        <ImageOff className="w-16 h-16" />
                       </div>
+                    )}
 
-                      {/* Discount Badge */}
-                      {user?.role === "reseller" && getDiscountPercentage(product) > 0 && (
-                        <div className="absolute top-2 right-2">
-                          <Badge className="bg-red-500 text-white text-xs px-2 py-1">
-                            -{getDiscountPercentage(product)}%
-                          </Badge>
-                        </div>
-                      )}
+                    {/* Enhanced Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 sm:duration-500"></div>
 
-                      {/* Favorite Button */}
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault()
-                          toggleFavorite(product.id)
-                        }}
-                        className="absolute bottom-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors"
+                    {/* Floating Background Elements */}
+                    <div className="absolute -top-6 -right-6 sm:-top-10 sm:-right-10 w-16 h-16 sm:w-32 sm:h-32 bg-gradient-to-br from-amber-400/20 to-orange-400/30 rounded-full blur-xl sm:blur-2xl group-hover:scale-125 sm:group-hover:scale-150 transition-transform duration-500 sm:duration-700"></div>
+
+                    {/* Top Badges */}
+                    <div className="absolute top-2 sm:top-3 lg:top-4 left-2 sm:left-3 lg:left-4 flex flex-col gap-1 sm:gap-2 lg:gap-3">
+                      {product.is_flash_sale_active ? (
+                        <Badge className="bg-gradient-to-r from-red-500 to-red-600 text-white font-bold px-2 py-1 sm:px-3 sm:py-1 lg:px-4 lg:py-2 shadow-md sm:shadow-lg lg:shadow-xl text-xs sm:text-xs animate-pulse group-hover:animate-none">
+                          <Zap className="h-2 w-2 sm:h-3 sm:w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2" />
+                          <span className="hidden sm:inline">FLASH SALE</span>
+                          <span className="sm:hidden">⚡</span>
+                        </Badge>
+                      ) : null}
+
+                      <Badge
+                        className={`${stockStatus.color} text-white font-semibold px-2 py-1 sm:px-3 sm:py-1 lg:px-4 lg:py-2 shadow-md sm:shadow-lg lg:shadow-xl text-xs sm:text-xs`}
                       >
-                        <Heart
-                          className={`h-4 w-4 ${
-                            favorites.has(product.id) ? "fill-red-500 text-red-500" : "text-gray-600"
-                          }`}
-                        />
-                      </button>
+                        <StockIcon className="h-2 w-2 sm:h-3 sm:w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2" />
+                        {stockStatus.text}
+                      </Badge>
                     </div>
 
-                    <div className="p-3">
-                      {/* Category */}
+                    {/* Discount Badge */}
+                    {discountPercent > 0 && (
+                      <div className="absolute top-2 sm:top-3 lg:top-4 right-2 sm:right-3 lg:right-4">
+                        <Badge
+                          className={`text-white font-bold px-2 py-1 sm:px-3 sm:py-1 lg:px-4 lg:py-2 shadow-md sm:shadow-lg lg:shadow-xl text-xs sm:text-xs ${
+                            product.is_flash_sale_active
+                              ? "bg-gradient-to-r from-red-500 to-red-600 animate-bounce"
+                              : "bg-gradient-to-r from-green-500 to-emerald-500"
+                          }`}
+                        >
+                          <Sparkles className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />-{discountPercent}%
+                        </Badge>
+                      </div>
+                    )}
+
+                    {/* Flash Sale Timer */}
+                    {product.is_flash_sale_active && product.flash_sale_end && timeRemaining ? (
+                      <div className="absolute bottom-2 left-2 right-2">
+                        <div className="bg-red-500 text-white text-xs px-2 py-1 rounded flex items-center justify-center animate-pulse">
+                          <Timer className="w-3 h-3 mr-1" />
+                          Berakhir dalam {timeRemaining}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* Enhanced Product Info */}
+                  <div className="p-3 sm:p-3 md:p-4 relative">
+                    {/* Category & Rating */}
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
                       <Badge
-                        className={`bg-gradient-to-r ${getCategoryColor(product.category_name)} text-white text-xs px-2 py-1 mb-2`}
+                        className={`bg-gradient-to-r ${getCategoryColor(
+                          product.category_name,
+                        )} text-white font-semibold px-2 py-1 sm:px-3 sm:py-1 lg:px-4 lg:py-2 shadow-md sm:shadow-lg text-xs sm:text-xs`}
                       >
                         {product.category_name}
                       </Badge>
-
-                      {/* Product Name */}
-                      <h3 className="font-medium text-sm mb-2 line-clamp-2 text-gray-900 leading-tight">
-                        {product.name}
-                      </h3>
-
-                      {/* Rating */}
-                      <div className="flex items-center mb-2">
-                        <div className="flex items-center">
+                      <div className="flex items-center gap-1">
+                        <div className="flex">
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              className={`h-3 w-3 ${
+                              className={`h-2 w-2 sm:h-3 sm:w-3 lg:h-4 lg:w-4 ${
                                 i < Math.floor(product.rating || 4.5)
                                   ? "fill-yellow-400 text-yellow-400"
                                   : "text-gray-300"
@@ -428,49 +583,129 @@ export default function ProductsPage() {
                             />
                           ))}
                         </div>
-                        <span className="text-xs text-gray-600 ml-1">({product.rating || 4.5})</span>
+                        <span className="text-xs sm:text-xs text-gray-600 font-medium">{product.rating || 4.5}</span>
                       </div>
+                    </div>
 
-                      {/* Price */}
-                      <div className="mb-3">
-                        <div className="text-lg font-bold text-amber-600">{formatPrice(getPrice(product))}</div>
-                        {user?.role === "reseller" && (
-                          <div className="text-xs text-gray-500 line-through">{formatPrice(product.user_price)}</div>
+                    {/* Product Name */}
+                    <h3 className="font-bold text-sm sm:text-base md:text-base mb-2 sm:mb-3 line-clamp-2 group-hover:text-amber-700 transition-colors leading-tight">
+                      {product.name}
+                    </h3>
+
+                    {/* Description - Hidden on mobile */}
+                    <p className="text-gray-600 mb-3 sm:mb-4 line-clamp-2 leading-relaxed text-xs sm:text-sm hidden sm:block">
+                      {product.description}
+                    </p>
+
+                    {/* Stock Info */}
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <div className="flex items-center text-xs sm:text-xs text-gray-500 bg-gray-50 px-2 py-1 sm:px-3 sm:py-2 rounded-full">
+                        <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Stok: </span>
+                        <span className="font-semibold ml-1 text-gray-700">{product.stock}</span>
+                      </div>
+                      {product.stock > 0 && product.stock < 50 && (
+                        <div className="flex items-center text-xs sm:text-xs text-orange-600 bg-orange-100 px-2 py-1 sm:px-3 sm:py-2 rounded-full font-semibold">
+                          <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="hidden sm:inline">Terlaris</span>
+                          <span className="sm:hidden">🔥</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Enhanced Pricing */}
+                    <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg sm:rounded-xl">
+                      <div className="flex items-end justify-between">
+                        <div>
+                          {originalPrice && (
+                            <div className="text-xs sm:text-xs text-gray-500 line-through font-medium mb-1">
+                              {formatPrice(originalPrice)}
+                            </div>
+                          )}
+                          <div
+                            className={`text-base sm:text-lg md:text-xl font-bold ${
+                              product.is_flash_sale_active
+                                ? "bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent"
+                                : "bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"
+                            }`}
+                          >
+                            {formatPrice(currentPrice)}
+                          </div>
+                        </div>
+                        {discountPercent > 0 && (
+                          <Badge
+                            className={`text-xs ${
+                              product.is_flash_sale_active ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            Hemat {discountPercent}%
+                          </Badge>
                         )}
                       </div>
+                    </div>
 
-                      {/* Stock Info */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="text-xs text-gray-600">Stok: {product.stock}</div>
-                        {product.stock > 0 && product.stock < 50 && (
-                          <div className="text-xs text-orange-600 font-medium">Terlaris</div>
-                        )}
-                      </div>
-
-                      {/* Action Button */}
-                      <Button
-                        size="sm"
-                        disabled={product.stock === 0}
-                        className={`w-full text-xs font-medium ${
-                          product.stock === 0
-                            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                            : "bg-amber-500 hover:bg-amber-600 text-white"
-                        }`}
-                      >
+                    {/* Enhanced Action Button */}
+                    <Button
+                      asChild
+                      className={`w-full font-bold text-xs sm:text-sm py-2 sm:py-2.5 px-4 sm:px-5 transition-all duration-300 sm:duration-500 transform hover:scale-105 shadow-md sm:shadow-lg hover:shadow-lg sm:hover:shadow-xl ${
+                        product.stock === 0
+                          ? "bg-gradient-to-r from-gray-300 to-gray-400 text-gray-600 cursor-not-allowed"
+                          : product.is_flash_sale_active
+                            ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white"
+                            : "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
+                      }`}
+                      disabled={product.stock === 0}
+                    >
+                      <Link href={`/product/${product.id}`} className="flex items-center justify-center">
                         {product.stock === 0 ? (
                           <>
-                            <Package className="h-3 w-3 mr-1" />
-                            Habis
+                            <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <span className="hidden sm:inline">Stok Habis</span>
+                            <span className="sm:hidden">Habis</span>
                           </>
                         ) : (
                           <>
-                            <ShoppingCart className="h-3 w-3 mr-1" />
-                            Beli
+                            <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <span className="hidden sm:inline">
+                              {product.is_flash_sale_active ? "Beli Flash Sale!" : "Beli Sekarang"}
+                            </span>
+                            <span className="sm:hidden">{product.is_flash_sale_active ? "Flash!" : "Beli"}</span>
                           </>
                         )}
+                      </Link>
+                    </Button>
+
+                    {/* Mobile Favorite Button - Kept for functionality, can be removed if not desired */}
+                    <div className="mt-2 sm:hidden">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={`w-full transition-all duration-300 ${
+                          favorites.has(product.id)
+                            ? "text-red-500 border-red-300 hover:bg-red-50"
+                            : "text-gray-600 hover:text-red-500 border-gray-300"
+                        }`}
+                        onClick={() => toggleFavorite(product.id)}
+                      >
+                        <Heart className={`h-4 w-4 mr-2 ${favorites.has(product.id) ? "fill-current" : ""}`} />
+                        {favorites.has(product.id) ? "Favorit" : "Tambah Favorit"}
                       </Button>
                     </div>
-                  </Link>
+
+                    {/* Enhanced Trust Indicator - Hidden on mobile */}
+                    {product.stock > 0 && (
+                      <div className="mt-3 sm:mt-4 text-center hidden sm:block">
+                        <span className="text-xs sm:text-xs text-gray-500 flex items-center justify-center bg-gray-50 px-3 py-2 rounded-full">
+                          <Shield className="h-3 w-3 sm:h-4 sm:w-4 mr-2 text-green-500" />
+                          <span className="hidden lg:inline">Garansi 100% atau uang kembali</span>
+                          <span className="lg:hidden">Garansi 100%</span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Enhanced Hover Effect Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-amber-600/5 via-orange-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 sm:duration-500 pointer-events-none"></div>
                 </CardContent>
               </Card>
             )
@@ -534,6 +769,7 @@ export default function ProductsPage() {
                     </Button>
                   )
                 })}
+
                 {totalPages > 3 && currentPage < totalPages - 1 && (
                   <>
                     <span className="text-gray-500 px-1">...</span>
@@ -564,6 +800,20 @@ export default function ProductsPage() {
       </div>
 
       <style jsx>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out forwards;
+          opacity: 0;
+        }
         .scrollbar-hide {
           -ms-overflow-style: none;
           scrollbar-width: none;

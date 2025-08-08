@@ -14,7 +14,7 @@ export function Footer() {
               alt="PremiumStore Logo"
               className="w-20 h-20 mb-5 object-cover"
               />
-              <span className="text-xl font-bold">Rivazstore</span>
+              <span className="text-xl font-bold">Vyloz Premium Zone</span>
             </div>
             <p className="text-gray-400 mb-4">
               Toko online terpercaya untuk akun premium dan layanan IndoSMM dengan sistem pembayaran yang aman.
@@ -98,7 +98,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-          <p className="text-gray-400">© 2024 Rivazstore. All rights reserved.</p>
+          <p className="text-gray-400">© 2025 Vyloz Premium Zone. All rights reserved.</p>
         </div>
       </div>
     </footer>

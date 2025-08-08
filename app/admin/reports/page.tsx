@@ -47,7 +47,7 @@ interface ReportData {
   dailyRevenue: Array<{ date: string; revenue: number; orders: number }>
   monthlyRevenue: Array<{ month: string; revenue: number; orders: number }>
   productSales: Array<{ name: string; sales: number; revenue: number }>
-  ordersByStatus: Array<{ status: string; count: number; percentage: number }>
+  ordersByStatus: Array<{ status: string; count: number; source?: string }>
   revenueByType: Array<{ type: string; revenue: number; percentage: number }>
   topCustomers: Array<{ name: string; email: string; totalSpent: number; orderCount: number }>
 }
@@ -117,6 +117,8 @@ export default function AdminReportsPage() {
       if (response.ok) {
         const data = await response.json()
         setReportData(data)
+      } else {
+        console.error("Failed to fetch report data:", await response.text())
       }
     } catch (error) {
       console.error("Failed to fetch report data:", error)
@@ -126,11 +128,28 @@ export default function AdminReportsPage() {
   }
 
   const formatCurrency = (amount: number) => {
+    if (isNaN(amount) || amount === null || amount === undefined) {
+      return "Rp0"
+    }
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount)
+  }
+
+  const formatNumber = (num: number) => {
+    if (isNaN(num) || num === null || num === undefined) {
+      return "0"
+    }
+    return new Intl.NumberFormat("id-ID").format(num)
+  }
+
+  const formatPercentage = (percent: number) => {
+    if (isNaN(percent) || percent === null || percent === undefined) {
+      return "0.0"
+    }
+    return percent.toFixed(1)
   }
 
   const exportReport = () => {
@@ -142,14 +161,14 @@ Periode: ${format(dateFrom, "dd MMMM yyyy", { locale: id })} - ${format(dateTo, 
 
 RINGKASAN:
 - Total Pendapatan: ${formatCurrency(reportData.totalRevenue)}
-- Total Pesanan: ${reportData.totalOrders}
-- Total Pelanggan: ${reportData.totalCustomers}
-- Pertumbuhan Pendapatan: ${reportData.revenueGrowth.toFixed(1)}%
+- Total Pesanan: ${formatNumber(reportData.totalOrders)}
+- Total Pelanggan: ${formatNumber(reportData.totalCustomers)}
+- Pertumbuhan Pendapatan: ${formatPercentage(reportData.revenueGrowth)}%
 
 PENDAPATAN HARIAN:
 ${reportData.dailyRevenue.map((item) => `${item.date}: ${formatCurrency(item.revenue)} (${item.orders} pesanan)`).join("\n")}
 
-PRODUK TERLARIS:
+LAYANAN TERLARIS:
 ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${formatCurrency(item.revenue)}`).join("\n")}
     `.trim()
 
@@ -159,6 +178,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
     a.href = url
     a.download = `laporan-${format(dateFrom, "yyyy-MM-dd")}-${format(dateTo, "yyyy-MM-dd")}.txt`
     a.click()
+    window.URL.revokeObjectURL(url)
   }
 
   if (isLoading) {
@@ -199,6 +219,9 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
     )
   }
 
+  // Calculate average order value safely
+  const averageOrderValue = reportData.totalOrders > 0 ? reportData.totalRevenue / reportData.totalOrders : 0
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -220,7 +243,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
               <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="today">Hari Ini</SelectItem>
                 <SelectItem value="yesterday">Kemarin</SelectItem>
                 <SelectItem value="last7days">7 Hari Terakhir</SelectItem>
@@ -245,7 +268,12 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus />
+                    <Calendar
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={(date) => date && setDateFrom(date)}
+                      initialFocus
+                    />
                   </PopoverContent>
                 </Popover>
 
@@ -260,7 +288,12 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus />
+                    <Calendar
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={(date) => date && setDateTo(date)}
+                      initialFocus
+                    />
                   </PopoverContent>
                 </Popover>
               </>
@@ -289,7 +322,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
                 <TrendingDown className="h-3 w-3 mr-1 text-red-500" />
               )}
               <span className={reportData.revenueGrowth >= 0 ? "text-green-500" : "text-red-500"}>
-                {Math.abs(reportData.revenueGrowth).toFixed(1)}%
+                {formatPercentage(Math.abs(reportData.revenueGrowth))}%
               </span>
               <span className="ml-1">dari periode sebelumnya</span>
             </div>
@@ -302,7 +335,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{reportData.totalOrders}</div>
+            <div className="text-2xl font-bold">{formatNumber(reportData.totalOrders)}</div>
             <div className="flex items-center text-xs text-muted-foreground">
               {reportData.orderGrowth >= 0 ? (
                 <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
@@ -310,7 +343,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
                 <TrendingDown className="h-3 w-3 mr-1 text-red-500" />
               )}
               <span className={reportData.orderGrowth >= 0 ? "text-green-500" : "text-red-500"}>
-                {Math.abs(reportData.orderGrowth).toFixed(1)}%
+                {formatPercentage(Math.abs(reportData.orderGrowth))}%
               </span>
               <span className="ml-1">dari periode sebelumnya</span>
             </div>
@@ -323,7 +356,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{reportData.totalCustomers}</div>
+            <div className="text-2xl font-bold">{formatNumber(reportData.totalCustomers)}</div>
             <div className="flex items-center text-xs text-muted-foreground">
               {reportData.customerGrowth >= 0 ? (
                 <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
@@ -331,7 +364,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
                 <TrendingDown className="h-3 w-3 mr-1 text-red-500" />
               )}
               <span className={reportData.customerGrowth >= 0 ? "text-green-500" : "text-red-500"}>
-                {Math.abs(reportData.customerGrowth).toFixed(1)}%
+                {formatPercentage(Math.abs(reportData.customerGrowth))}%
               </span>
               <span className="ml-1">pelanggan baru</span>
             </div>
@@ -344,9 +377,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(reportData.totalOrders > 0 ? reportData.totalRevenue / reportData.totalOrders : 0)}
-            </div>
+            <div className="text-2xl font-bold">{formatCurrency(averageOrderValue)}</div>
             <p className="text-xs text-muted-foreground">Nilai rata-rata pesanan</p>
           </CardContent>
         </Card>
@@ -387,7 +418,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip
-                  formatter={(value: number) => [value, "Pesanan"]}
+                  formatter={(value: number) => [formatNumber(value), "Pesanan"]}
                   labelFormatter={(label) => `Tanggal: ${label}`}
                 />
                 <Line type="monotone" dataKey="orders" stroke="#82ca9d" strokeWidth={2} />
@@ -396,18 +427,18 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
           </CardContent>
         </Card>
 
-        {/* Product Sales */}
+        {/* Service Sales */}
         <Card>
           <CardHeader>
-            <CardTitle>Produk Terlaris</CardTitle>
+            <CardTitle>Layanan Terlaris</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={reportData.productSales.slice(0, 10)}>
+              <BarChart data={reportData.productSales.slice(0, 5)}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                 <YAxis />
-                <Tooltip formatter={(value: number) => [value, "Terjual"]} />
+                <Tooltip formatter={(value: number) => [formatNumber(value), "Terjual"]} />
                 <Bar dataKey="sales" fill="#8884d8" />
               </BarChart>
             </ResponsiveContainer>
@@ -427,7 +458,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percentage }) => `${name} (${percentage.toFixed(1)}%)`}
+                  label={({ name, percentage }) => `${name} (${formatPercentage(percentage)}%)`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="revenue"
@@ -458,7 +489,7 @@ ${reportData.productSales.map((item) => `${item.name}: ${item.sales} terjual, ${
                 </div>
                 <div className="text-right">
                   <div className="font-bold">{formatCurrency(customer.totalSpent)}</div>
-                  <div className="text-sm text-gray-500">{customer.orderCount} pesanan</div>
+                  <div className="text-sm text-gray-500">{formatNumber(customer.orderCount)} pesanan</div>
                 </div>
               </div>
             ))}

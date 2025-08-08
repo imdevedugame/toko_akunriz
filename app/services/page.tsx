@@ -1,458 +1,479 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { TrendingUp, Zap, Crown, Package, Heart, Instagram, Youtube, Music, Facebook, ChevronLeft, ChevronRight, Search } from 'lucide-react'
-import { useAuth } from "@/components/auth-provider"
-import { IndoSMMPurchaseModal } from "@/components/indosmm-purchase-modal"
 import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, Users, Heart, MessageCircle, Eye, UserPlus, Share2, Package, Filter, Sparkles } from "lucide-react"
+import { SocialMediaOrderModal } from "@/components/social-media-order-modal"
+import { useAuth } from "@/components/auth-provider"
+import Image from "next/image"
 
-interface IndoSMMService {
+interface SocialCategory {
   id: number
-  service_id: number
   name: string
-  category: string
-  rate: number
+  slug: string
+  description: string
+  image_url: string
+  status: string
+}
+
+interface SocialService {
+  id: number
+  category_id: number
+  name: string
+  description: string
+  service_type: string
+  service_mode: "package" | "custom"
+  price_user: number
+  price_reseller: number
   min_order: number
   max_order: number
-  user_rate: number
-  reseller_rate: number
-  image_url?: string
+  features: string[]
+  status: string
+  category_name: string
+  category_image: string
+  package_count?: number
 }
 
-interface Pagination {
-  page: number
-  limit: number
-  total: number
-  pages: number
-  hasNext: boolean
-  hasPrev: boolean
+const serviceTypeIcons = {
+  followers: Users,
+  likes: Heart,
+  comments: MessageCircle,
+  views: Eye,
+  subscribers: UserPlus,
+  shares: Share2,
 }
 
-const categoryIcons = {
-  Instagram: Instagram,
-  YouTube: Youtube,
-  TikTok: Music,
-  Facebook: Facebook,
-  Twitter: TrendingUp,
-  default: TrendingUp,
-}
-
-const categoryColors = {
-  Instagram: "bg-purple-500",
-  YouTube: "bg-red-500",
-  TikTok: "bg-gray-800",
-  Facebook: "bg-blue-500",
-  Twitter: "bg-sky-500",
-  default: "bg-amber-500",
+const serviceTypeLabels = {
+  followers: "Followers",
+  likes: "Likes",
+  comments: "Comments",
+  views: "Views",
+  subscribers: "Subscribers",
+  shares: "Shares",
 }
 
 export default function ServicesPage() {
   const { user } = useAuth()
-  const [services, setServices] = useState<IndoSMMService[]>([])
-  const [categories, setCategories] = useState<string[]>([])
-  const [pagination, setPagination] = useState<Pagination>({
-    page: 1,
-    limit: 12,
-    total: 0,
-    pages: 0,
-    hasNext: false,
-    hasPrev: false,
-  })
+  const [categories, setCategories] = useState<SocialCategory[]>([])
+  const [services, setServices] = useState<SocialService[]>([])
+  const [filteredServices, setFilteredServices] = useState<SocialService[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedService, setSelectedService] = useState<IndoSMMService | null>(null)
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false)
-  const [favorites, setFavorites] = useState<Set<number>>(new Set())
+  const [selectedServiceType, setSelectedServiceType] = useState("all")
+  const [selectedServiceMode, setSelectedServiceMode] = useState("all")
+  const [selectedService, setSelectedService] = useState<SocialService | null>(null)
 
   useEffect(() => {
-    fetchServices()
-  }, [selectedCategory, pagination.page, searchTerm])
+    fetchData()
+  }, [])
 
-  const fetchServices = async () => {
+  useEffect(() => {
+    filterServices()
+  }, [services, searchTerm, selectedCategory, selectedServiceType, selectedServiceMode])
+
+  const fetchData = async () => {
     try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-      })
+      const [categoriesRes, servicesRes] = await Promise.all([
+        fetch("/api/social-categories"),
+        fetch("/api/social-services"),
+      ])
 
-      if (selectedCategory !== "all") {
-        params.append("category", selectedCategory)
-      }
-
-      if (searchTerm) {
-        params.append("search", searchTerm)
-      }
-
-      const response = await fetch(`/api/services?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        setServices(data.services)
-        setCategories(data.categories || [])
-        setPagination(data.pagination)
+      if (categoriesRes.ok && servicesRes.ok) {
+        const categoriesData = await categoriesRes.json()
+        const servicesData = await servicesRes.json()
+        setCategories(categoriesData.categories.filter((cat: SocialCategory) => cat.status === "active"))
+        setServices(servicesData.services.filter((service: SocialService) => service.status === "active"))
       }
     } catch (error) {
-      console.error("Failed to fetch services:", error)
+      console.error("Failed to fetch data:", error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const formatPrice = (rate: number, quantity: number) => {
-    const total = (rate * quantity) / 1000
-    if (isNaN(total) || !isFinite(total) || total < 0) {
-      return "Rp 0"
+  const filterServices = () => {
+    let filtered = services
+
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (service) =>
+          service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          service.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          service.category_name.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
     }
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter((service) => service.category_id.toString() === selectedCategory)
+    }
+
+    if (selectedServiceType !== "all") {
+      filtered = filtered.filter((service) => service.service_type === selectedServiceType)
+    }
+
+    if (selectedServiceMode !== "all") {
+      filtered = filtered.filter((service) => service.service_mode === selectedServiceMode)
+    }
+
+    setFilteredServices(filtered)
+  }
+
+  const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
-    }).format(total)
+    }).format(price)
   }
 
-  const getRate = (service: IndoSMMService) => {
-    return user?.role === "reseller" ? service.reseller_rate : service.user_rate
+  const getServiceTypeIcon = (type: string) => {
+    const Icon = serviceTypeIcons[type as keyof typeof serviceTypeIcons] || Users
+    return <Icon className="h-5 w-5" />
   }
 
-  const handleServiceSelect = (service: IndoSMMService) => {
-    if (!user) {
-      alert("Silahkan login terlebih dahulu untuk memesan layanan")
-      return
-    }
-    setSelectedService(service)
-    setShowPurchaseModal(true)
-  }
-
-  const handleSearch = (value: string) => {
-    setSearchTerm(value)
-    setPagination((prev) => ({ ...prev, page: 1 }))
-  }
-
-  const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value)
-    setPagination((prev) => ({ ...prev, page: 1 }))
-  }
-
-  const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }))
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }
-
-  const toggleFavorite = (serviceId: number) => {
-    setFavorites((prev) => {
-      const newFavorites = new Set(prev)
-      if (newFavorites.has(serviceId)) {
-        newFavorites.delete(serviceId)
-      } else {
-        newFavorites.add(serviceId)
-      }
-      return newFavorites
-    })
+  const getUserPrice = (service: SocialService) => {
+    return user?.role === "reseller" ? service.price_reseller : service.price_user
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100">
-        <div className="container mx-auto px-4 py-4">
-          <div className="mb-6">
-            <Skeleton className="h-8 w-48 mb-2" />
-            <Skeleton className="h-4 w-64" />
-          </div>
-          <div className="mb-6 space-y-4">
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-8 w-20 rounded-full flex-shrink-0" />
+      <div className="relative overflow-hidden min-h-screen">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100"></div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fillRule='evenodd'%3E%3Cg fill='%23d97706' fillOpacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40"></div>
+
+        <div className="relative container mx-auto px-4 py-8">
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="h-8 w-64 bg-gradient-to-r from-amber-200 to-orange-200 rounded-lg animate-pulse mx-auto"></div>
+              <div className="h-4 w-96 bg-gradient-to-r from-amber-100 to-orange-100 rounded-lg animate-pulse mx-auto mt-2"></div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <Card
+                  key={i}
+                  className="animate-pulse border-0 shadow-xl bg-gradient-to-br from-white via-amber-50/30 to-orange-50/50"
+                >
+                  <CardContent className="p-6">
+                    <div className="h-32 bg-gradient-to-r from-amber-200 to-orange-200 rounded-lg"></div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Skeleton className="h-10 flex-1" />
-              <Skeleton className="h-10 w-32" />
-            </div>
-          </div>
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-4">
-                  <Skeleton className="h-6 w-32 mb-3" />
-                  <div className="space-y-3">
-                    {[...Array(2)].map((_, j) => (
-                      <Skeleton key={j} className="h-16 w-full" />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
       </div>
     )
   }
 
-  const groupedServices = services.reduce(
-    (acc, service) => {
-      if (!acc[service.category]) {
-        acc[service.category] = []
-      }
-      acc[service.category].push(service)
-      return acc
-    },
-    {} as Record<string, IndoSMMService[]>,
-  )
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100">
-      <div className="container mx-auto px-4 py-4">
-        {/* Mobile-First Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-900">Layanan SMM</h1>
-          <p className="text-sm text-gray-600">Tingkatkan media sosial dengan layanan berkualitas</p>
-        </div>
+    <>
+      <div className="relative overflow-hidden min-h-screen">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100"></div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fillRule='evenodd'%3E%3Cg fill='%23d97706' fillOpacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40"></div>
 
-        {/* Mobile Categories - Horizontal Scroll */}
-        <div className="mb-4">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            <Button
-              variant={selectedCategory === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleCategoryChange("all")}
-              className={`flex-shrink-0 text-xs ${
-                selectedCategory === "all"
-                  ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
-                  : "bg-white hover:bg-gray-50"
-              }`}
-            >
-              Semua
-            </Button>
-            {categories.map((category) => {
-              const IconComponent = categoryIcons[category as keyof typeof categoryIcons] || categoryIcons.default
-              return (
-                <Button
-                  key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleCategoryChange(category)}
-                  className={`flex-shrink-0 text-xs ${
-                    selectedCategory === category
-                      ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
-                      : "bg-white hover:bg-gray-50"
-                  }`}
-                >
-                  <IconComponent className="h-3 w-3 mr-1" />
-                  {category}
-                </Button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Search and Filters */}
-        <Card className="mb-4 shadow-xl border-0 bg-gradient-to-br from-white via-amber-50/30 to-orange-50/50 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-500 h-4 w-4" />
-                  <Input
-                    placeholder="Cari layanan..."
-                    value={searchTerm}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-10 h-10 border-amber-200 focus:border-amber-500 focus:ring-amber-500"
-                  />
-                </div>
+        <div className="relative container mx-auto px-4 py-8 lg:py-12">
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="text-center space-y-4 animate-fade-in-up">
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Premium Services
+                </Badge>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <Package className="h-3 w-3" />
-                  <span>
-                    {(pagination.page - 1) * pagination.limit + 1} -{" "}
-                    {Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total} layanan
-                  </span>
-                </div>
-                {user?.role === "reseller" && (
-                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs px-2 py-1">
-                    <Crown className="h-3 w-3 mr-1" />
-                    Reseller
-                  </Badge>
-                )}
-              </div>
+              <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                  Social Media
+                </span>
+                <span className="text-black"> Services</span>
+              </h1>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                Tingkatkan kehadiran media sosial Anda dengan layanan berkualitas tinggi kami. Followers, likes,
+                comments, dan lebih banyak lagi!
+              </p>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Services List - Mobile Optimized */}
-        <div className="space-y-4 mb-6">
-          {Object.entries(groupedServices).map(([category, categoryServices]) => {
-            const IconComponent = categoryIcons[category as keyof typeof categoryIcons] || categoryIcons.default
-            const colorClass = categoryColors[category as keyof typeof categoryColors] || categoryColors.default
+            {/* Filters */}
+            <Card
+              className="group border-0 shadow-xl hover:shadow-2xl transition-all duration-700 bg-gradient-to-br from-white via-amber-50/30 to-orange-50/50 backdrop-blur-sm animate-fade-in-up"
+              style={{ animationDelay: "0.2s" }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-400/0 via-amber-400/5 to-orange-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg"></div>
+              <CardContent className="p-6 relative z-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <Filter className="h-5 w-5 text-amber-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Filter Layanan</h3>
+                </div>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-500 h-4 w-4" />
+                    <Input
+                      placeholder="Cari layanan..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 border-amber-200 focus:border-amber-500 focus:ring-amber-500"
+                    />
+                  </div>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger className="w-full md:w-48 border-amber-200 focus:border-amber-500 focus:ring-amber-500">
+                      <SelectValue placeholder="Pilih Platform" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="all">Semua Platform</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
+                    <SelectTrigger className="w-full md:w-48 border-amber-200 focus:border-amber-500 focus:ring-amber-500">
+                      <SelectValue placeholder="Jenis Layanan" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="all">Semua Jenis</SelectItem>
+                      {Object.entries(serviceTypeLabels).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedServiceMode} onValueChange={setSelectedServiceMode}>
+                    <SelectTrigger className="w-full md:w-48 border-amber-200 focus:border-amber-500 focus:ring-amber-500">
+                      <SelectValue placeholder="Mode Layanan" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="all">Semua Mode</SelectItem>
+                      <SelectItem value="package">Paket</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Menampilkan <span className="font-semibold text-amber-600">{filteredServices.length}</span> dari{" "}
+                    <span className="font-semibold text-amber-600">{services.length}</span> layanan
+                  </div>
+                  {user?.role === "reseller" && (
+                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">Harga Reseller</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-            return (
-              <Card key={category} className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className={`${colorClass} text-white p-4`}>
-                  <CardTitle className="flex items-center text-lg">
-                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                      <IconComponent className="h-4 w-4 text-white" />
+            {/* Services Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredServices.map((service, index) => (
+                <Card
+                  key={service.id}
+                  className="group border-0 shadow-xl hover:shadow-2xl transition-all duration-700 bg-gradient-to-br from-white via-amber-50/20 to-orange-50/30 backdrop-blur-sm transform hover:scale-105 hover:-translate-y-3 animate-fade-in-up hover:rotate-1 relative overflow-hidden"
+                  style={{ animationDelay: `${0.1 * (index % 6)}s` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-400/0 via-amber-400/5 to-orange-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-amber-400/20 to-orange-400/30 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+
+                  <CardHeader className="pb-3 relative z-10">
+                    <div className="flex items-center gap-3 mb-3 flex-wrap">
+                      {service.category_image && (
+                        <div className="w-8 h-8 rounded-lg overflow-hidden shadow-md group-hover:shadow-lg transition-shadow duration-300">
+                          <Image
+                            src={service.category_image || "/placeholder.svg"}
+                            alt={service.category_name}
+                            width={32}
+                            height={32}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-amber-100 to-orange-200 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                          {getServiceTypeIcon(service.service_type)}
+                        </div>
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                          {serviceTypeLabels[service.service_type as keyof typeof serviceTypeLabels]}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {service.service_mode === "package" ? (
+                          <Badge variant="outline" className="text-xs border-orange-300 text-orange-700">
+                            <Package className="h-3 w-3 mr-1" />
+                            Paket
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+                            Custom
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold">{category}</div>
-                      <div className="text-white/80 text-sm">{categoryServices.length} layanan</div>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    {categoryServices.map((service) => (
-                      <div
-                        key={service.id}
-                        className="p-4 border border-amber-200 rounded-lg cursor-pointer transition-all duration-300 hover:border-amber-400 hover:bg-gradient-to-br hover:from-amber-50 hover:to-orange-50 hover:shadow-md transform hover:scale-[1.02]"
-                        onClick={() => handleServiceSelect(service)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm mb-2 line-clamp-2 text-gray-900">{service.name}</h4>
-                            <div className="flex flex-wrap gap-2 text-xs mb-2">
-                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                Min: {service.min_order.toLocaleString()}
-                              </span>
-                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                Max: {service.max_order.toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-                              {formatPrice(getRate(service), 1000)} / 1K
-                            </div>
-                            {!user && (
-                              <div className="text-xs text-gray-500 mt-1">Klik untuk memesan (Login diperlukan)</div>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-end gap-2 ml-4">
-                            {user?.role === "reseller" && (
-                              <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs px-2 py-1">
-                                Reseller
-                              </Badge>
-                            )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                toggleFavorite(service.id)
-                              }}
-                              className="w-8 h-8 bg-white border border-amber-200 rounded-full flex items-center justify-center hover:bg-amber-50 hover:border-amber-300 transition-colors"
+                    <CardTitle className="text-lg group-hover:text-amber-800 transition-colors duration-300">
+                      {service.name}
+                    </CardTitle>
+                    <p className="text-sm text-gray-600 line-clamp-2 group-hover:text-gray-700 transition-colors duration-300">
+                      {service.description}
+                    </p>
+                  </CardHeader>
+
+                  <CardContent className="relative z-10">
+                    <div className="space-y-4">
+                      {/* Features */}
+                      {service.features && service.features.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {service.features.slice(0, 3).map((feature, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="text-xs border-amber-200 text-amber-700 hover:bg-amber-50"
                             >
-                              <Heart
-                                className={`h-4 w-4 ${
-                                  favorites.has(service.id) ? "fill-red-500 text-red-500" : "text-gray-600"
-                                }`}
-                              />
-                            </button>
+                              {feature}
+                            </Badge>
+                          ))}
+                          {service.features.length > 3 && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs border-amber-200 text-amber-700 hover:bg-amber-50"
+                            >
+                              +{service.features.length - 3} lainnya
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Service Mode Info */}
+                      {service.service_mode === "package" && service.package_count && (
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-100 group-hover:shadow-md transition-shadow duration-300">
+                          <div className="flex items-center gap-2 text-sm text-blue-700">
+                            <Package className="h-4 w-4" />
+                            <span className="font-medium">{service.package_count} paket tersedia</span>
                           </div>
                         </div>
+                      )}
+
+                      {/* Price and Order Info */}
+                      <div className="space-y-2">
+                        {service.service_mode === "custom" ? (
+                          <>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-600">Harga per 1000:</span>
+                              <span className="font-bold text-lg bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                                {formatPrice(getUserPrice(service))}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div className="bg-green-50 p-2 rounded-lg border border-green-100">
+                                <div className="text-green-600 font-medium">Min Order</div>
+                                <div className="text-green-800 font-semibold">{service.min_order.toLocaleString()}</div>
+                              </div>
+                              <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
+                                <div className="text-blue-600 font-medium">Max Order</div>
+                                <div className="text-blue-800 font-semibold">{service.max_order.toLocaleString()}</div>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-lg border border-amber-100">
+                            <div className="text-sm text-gray-600 mb-1">Mulai dari</div>
+                            <div className="font-bold text-xl bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                              {formatPrice(getUserPrice(service))}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">Lihat paket untuk detail lengkap</div>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
 
-        {/* Empty State - No services found */}
-        {services.length === 0 && !isLoading && (
-          <div className="text-center py-12">
-            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 max-w-sm mx-auto shadow-xl border-0">
-              <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Tidak Ada Layanan</h3>
-              <p className="text-sm text-gray-600">Coba ubah kata kunci pencarian atau kategori</p>
+                      <Button
+                        className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105 group-hover:animate-pulse"
+                        onClick={() => setSelectedService(service)}
+                      >
+                        {service.service_mode === "package" ? "Lihat Paket" : "Pesan Sekarang"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </div>
-        )}
 
-        {/* Mobile-Friendly Pagination */}
-        {pagination.pages > 1 && (
-          <div className="flex items-center justify-center mt-8">
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={!pagination.hasPrev}
-                className="border-amber-200 hover:bg-amber-50"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex items-center space-x-1">
-                {[...Array(Math.min(3, pagination.pages))].map((_, i) => {
-                  const pageNum = i + 1
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={pagination.page === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handlePageChange(pageNum)}
-                      className={
-                        pagination.page === pageNum
-                          ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
-                          : "border-amber-200 hover:bg-amber-50"
-                      }
-                    >
-                      {pageNum}
-                    </Button>
-                  )
-                })}
-                {pagination.pages > 3 && pagination.page < pagination.pages - 1 && (
-                  <>
-                    <span className="text-gray-500 px-1">...</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(pagination.pages)}
-                      className="border-amber-200 hover:bg-amber-50"
-                    >
-                      {pagination.pages}
-                    </Button>
-                  </>
-                )}
+            {filteredServices.length === 0 && (
+              <div className="text-center py-12 animate-fade-in-up">
+                <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-gray-50/30 to-gray-100/50 backdrop-blur-sm max-w-md mx-auto">
+                  <CardContent className="p-8">
+                    <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Search className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Tidak ada layanan ditemukan</h3>
+                    <p className="text-gray-500">
+                      {searchTerm ||
+                      selectedCategory !== "all" ||
+                      selectedServiceType !== "all" ||
+                      selectedServiceMode !== "all"
+                        ? "Coba sesuaikan kriteria pencarian atau filter Anda."
+                        : "Belum ada layanan yang tersedia saat ini."}
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={!pagination.hasNext}
-                className="border-amber-200 hover:bg-amber-50"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+            )}
           </div>
-        )}
 
-        {/* Purchase Modal - Opens directly when service is clicked */}
-        {selectedService && showPurchaseModal && (
-          <IndoSMMPurchaseModal
-            isOpen={showPurchaseModal}
-            onClose={() => {
-              setShowPurchaseModal(false)
-              setSelectedService(null)
-            }}
-            service={selectedService}
-            initialTarget=""
-            initialQuantity={selectedService.min_order.toString()}
-            userRole={user?.role}
-          />
-        )}
+          {/* Order Modal */}
+          {selectedService && (
+            <SocialMediaOrderModal
+              service={selectedService}
+              isOpen={!!selectedService}
+              onClose={() => setSelectedService(null)}
+            />
+          )}
+        </div>
       </div>
 
       <style jsx>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
+        @keyframes pulse-slow {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.8;
+          }
+        }
+        @keyframes gradient-x {
+          0%, 100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
+        }
+        .animate-gradient-x {
+          background-size: 200% 200%;
+          animation: gradient-x 3s ease infinite;
         }
       `}</style>
-    </div>
+    </>
   )
 }

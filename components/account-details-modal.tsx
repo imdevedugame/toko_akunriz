@@ -43,7 +43,7 @@ export function AccountDetailsModal({ order, isOpen, onClose }: AccountDetailsMo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-white">
         <DialogHeader>
           <DialogTitle>Detail Akun Premium</DialogTitle>
         </DialogHeader>
