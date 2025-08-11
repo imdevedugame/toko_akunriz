@@ -53,7 +53,7 @@ export function DuplicateAccountModal({ isOpen, onClose, onConfirm, account }: D
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-white">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Copy className="h-5 w-5" />

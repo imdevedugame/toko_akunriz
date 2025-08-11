@@ -302,7 +302,7 @@ export default function AdminAccountsPage() {
                 Add Account
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-white w-full max-w-7xl">
+            <DialogContent className="bg-white w-full max-w-5xl">
   <DialogHeader>
     <DialogTitle>Add New Account</DialogTitle>
     <DialogDescription>
@@ -489,7 +489,7 @@ export default function AdminAccountsPage() {
 
       {/* Edit Account Modal */}
       <Dialog open={!!editingAccount} onOpenChange={() => setEditingAccount(null)}>
-        <DialogContent className="bg-white">
+        <DialogContent className="bg-white w-full max-w-5xl">
           <DialogHeader>
             <DialogTitle>Edit Account</DialogTitle>
             <DialogDescription>Update the account information.</DialogDescription>
