@@ -74,28 +74,28 @@ export default function AccountForm({ onSuccess, onCancel, editAccount }: Accoun
       }
     }
   }, [editAccount, products])
-
-  const fetchProducts = async () => {
-    try {
-      setIsLoadingProducts(true)
-      const response = await fetch("/api/admin/products")
-      if (response.ok) {
-        const data = await response.json()
-        setProducts(data.products || [])
-      } else {
-        throw new Error("Failed to fetch products")
-      }
-    } catch (error) {
-      console.error("Failed to fetch products:", error)
-      toast({
-        title: "Error",
-        description: "Gagal memuat daftar produk",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoadingProducts(false)
+const fetchProducts = async () => {
+  try {
+    setIsLoadingProducts(true)
+    const response = await fetch("/api/admin/products?limit=1000&status=all")
+    if (response.ok) {
+      const data = await response.json()
+      setProducts(data.products || [])
+    } else {
+      throw new Error("Failed to fetch products")
     }
+  } catch (error) {
+    console.error("Failed to fetch products:", error)
+    toast({
+      title: "Error",
+      description: "Gagal memuat daftar produk",
+      variant: "destructive",
+    })
+  } finally {
+    setIsLoadingProducts(false)
   }
+}
+
 
   // Get unique categories
   const categories = useMemo(() => {

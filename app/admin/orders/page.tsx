@@ -501,7 +501,7 @@ const exportToExcel = () => {
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">Semua Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="expired">Expired</SelectItem>
@@ -515,7 +515,7 @@ const exportToExcel = () => {
               <SelectTrigger>
                 <SelectValue placeholder="Tipe" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">Semua Tipe</SelectItem>
                 <SelectItem value="premium_account">Premium Account</SelectItem>
                 <SelectItem value="social_media">Social Media</SelectItem>
@@ -527,7 +527,7 @@ const exportToExcel = () => {
               <SelectTrigger>
                 <SelectValue placeholder="Role User" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="all">Semua Role</SelectItem>
                 <SelectItem value="user">User</SelectItem>
                 <SelectItem value="reseller">Reseller</SelectItem>

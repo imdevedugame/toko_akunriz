@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Plus, Search, Edit, Trash2, Eye, Upload, Copy, Users, Filter } from "lucide-react"
-import { AccountForm } from "@/components/admin/account-form"
+import AccountForm  from "@/components/admin/account-form"
 import { AccountViewModal } from "@/components/admin/account-view-modal"
 import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog"
 import { BulkAccountUpload } from "@/components/admin/bulk-account-upload"
@@ -302,17 +302,19 @@ export default function AdminAccountsPage() {
                 Add Account
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-white">
-              <DialogHeader>
-                <DialogTitle>Add New Account</DialogTitle>
-                <DialogDescription>Add a new premium account to your inventory.</DialogDescription>
-              </DialogHeader>
-              <AccountForm
-                products={products}
-                onSubmit={handleCreateAccount}
-                onCancel={() => setShowCreateModal(false)}
-              />
-            </DialogContent>
+            <DialogContent className="bg-white w-full max-w-7xl">
+  <DialogHeader>
+    <DialogTitle>Add New Account</DialogTitle>
+    <DialogDescription>
+      Add a new premium account to your inventory.
+    </DialogDescription>
+  </DialogHeader>
+  <AccountForm
+    products={products}
+    onSubmit={handleCreateAccount}
+    onCancel={() => setShowCreateModal(false)}
+  />
+</DialogContent>
           </Dialog>
         </div>
       </div>
