@@ -219,17 +219,17 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
   }
 }
 
-
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const params = await context.params
     const productId = params.id
 
-    console.log("[DEBUG] Deleting product with ID:", productId)
+    console.log("[DEBUG] Setting product inactive with ID:", productId)
 
     await db.query("START TRANSACTION")
 
     try {
+      // Cek apakah produk ada
       const [existingProduct] = await db.query("SELECT id FROM premium_products WHERE id = ?", [productId])
       if ((existingProduct as any[]).length === 0) {
         console.log("[DEBUG] Product not found")
@@ -237,6 +237,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
         return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 })
       }
 
+      // Cek order pending atau processing
       const [pendingOrders] = await db.query(
         `
         SELECT COUNT(*) as count 
@@ -251,22 +252,21 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
       console.log("[DEBUG] Pending orders count:", pendingCount)
 
       if (pendingCount > 0) {
-        console.log("[DEBUG] Cannot delete product with pending orders")
+        console.log("[DEBUG] Cannot inactivate product with pending orders")
         await db.query("ROLLBACK")
         return NextResponse.json(
-          { success: false, error: "Cannot delete product with pending orders" },
+          { success: false, error: "Cannot inactivate product with pending orders" },
           { status: 400 }
         )
       }
 
-      await db.query("DELETE FROM premium_accounts WHERE product_id = ?", [productId])
-      await db.query("DELETE FROM flash_sale_orders WHERE product_id = ?", [productId])
-      await db.query("DELETE FROM products WHERE id = ?", [productId])
+      // Ubah status produk jadi inactive
+      await db.query("UPDATE premium_products SET status = 'inactive' WHERE id = ?", [productId])
 
       await db.query("COMMIT")
 
-      console.log("[DEBUG] Product deleted successfully")
-      return NextResponse.json({ success: true, message: "Product deleted successfully" })
+      console.log("[DEBUG] Product status updated to inactive successfully")
+      return NextResponse.json({ success: true, message: "Product set to inactive successfully" })
     } catch (transactionError) {
       await db.query("ROLLBACK")
       console.error("[DEBUG] Transaction error:", transactionError)

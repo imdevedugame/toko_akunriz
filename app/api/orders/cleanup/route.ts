@@ -1,35 +1,37 @@
 import { type NextRequest, NextResponse } from "next/server"
 import db from "@/lib/db"
 
+
 export async function POST(request: NextRequest) {
   try {
     console.log("🧹 Starting order cleanup job...")
 
-    // Start transaction
-    await db.execute("START TRANSACTION")
+    await db.query("START TRANSACTION")
 
     try {
-      // Log job start
-      const [jobResult] = await db.execute(
+      // Log job start sesuai struktur tabel kamu
+      const [jobResult] = await db.query(
         `
-        INSERT INTO scheduled_jobs (job_name, status, started_at) 
-        VALUES ('order_cleanup', 'running', NOW())
+        INSERT INTO scheduled_jobs (job_type, status) 
+        VALUES ('order_cleanup', 'running')
       `,
       )
       const jobId = (jobResult as any).insertId
 
-      // Find expired orders
-      const [expiredOrderRows] = await db.execute(`
+      // Cari expired orders
+      const [expiredOrderRows] = await db.query(`
         SELECT 
           o.id,
           o.order_number,
           o.user_id,
           COUNT(pa.id) as reserved_accounts
         FROM orders o
-        LEFT JOIN premium_accounts pa ON pa.reserved_for_order_id = o.id AND pa.status = 'reserved'
-        WHERE o.status = 'pending' 
-          AND o.expires_at < NOW()
-          AND o.auto_cancelled_at IS NULL
+        LEFT JOIN premium_accounts pa 
+          ON pa.reserved_for_order_id = o.id AND pa.status = 'reserved'
+        WHERE o.status IN ('pending', 'failed')
+  AND o.expires_at < NOW()
+  AND o.auto_cancelled_at IS NULL
+
         GROUP BY o.id, o.order_number, o.user_id
       `)
 
@@ -44,7 +46,7 @@ export async function POST(request: NextRequest) {
           console.log(`⏰ Processing expired order: ${order.order_number}`)
 
           // Release reserved accounts
-          const [releaseResult] = await db.execute(
+          const [releaseResult] = await db.query(
             `
             UPDATE premium_accounts 
             SET status = 'available', 
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
           releasedAccountsTotal += releasedAccounts
 
           // Update order status
-          await db.execute(
+          await db.query(
             `
             UPDATE orders 
             SET status = 'cancelled',
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
           )
 
           // Log cancellation
-          await db.execute(
+          await db.query(
             `
             INSERT INTO order_cancellations (
               order_id, cancelled_by_user_id, cancellation_type, reason, cancelled_at
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest) {
           )
 
           // Remove flash sale tracking for cancelled orders
-          await db.execute(
+          await db.query(
             `
             DELETE FROM flash_sale_orders 
             WHERE order_id = ?
@@ -95,24 +97,22 @@ export async function POST(request: NextRequest) {
           console.log(`✅ Order ${order.order_number} cancelled, ${releasedAccounts} accounts released`)
         } catch (orderError) {
           console.error(`❌ Error processing order ${order.order_number}:`, orderError)
-          // Continue with other orders
         }
       }
 
       // Update job status
-      await db.execute(
+      await db.query(
         `
         UPDATE scheduled_jobs 
         SET status = 'completed', 
-            completed_at = NOW(),
-            processed_count = ?
+            processed_count = ?,
+            updated_at = NOW()
         WHERE id = ?
       `,
         [processedCount, jobId],
       )
 
-      // Commit transaction
-      await db.execute("COMMIT")
+      await db.query("COMMIT")
 
       console.log(
         `🎉 Cleanup completed: ${processedCount} orders processed, ${releasedAccountsTotal} accounts released`,
@@ -126,18 +126,17 @@ export async function POST(request: NextRequest) {
         job_id: jobId,
       })
     } catch (transactionError) {
-      await db.execute("ROLLBACK")
+      await db.query("ROLLBACK")
       throw transactionError
     }
   } catch (error) {
     console.error("Order cleanup error:", error)
 
-    // Try to log the error
     try {
-      await db.execute(
+      await db.query(
         `
-        INSERT INTO scheduled_jobs (job_name, status, started_at, completed_at, error_message) 
-        VALUES ('order_cleanup', 'failed', NOW(), NOW(), ?)
+        INSERT INTO scheduled_jobs (job_type, status, error_message) 
+        VALUES ('order_cleanup', 'failed', ?)
       `,
         [error instanceof Error ? error.message : "Unknown error"],
       )
@@ -163,18 +162,16 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Get recent cleanup job status
-    const [jobRows] = await db.execute(`
+    const [jobRows] = await db.query(`
       SELECT * FROM scheduled_jobs 
-      WHERE job_name = 'order_cleanup' 
-      ORDER BY started_at DESC 
+      WHERE job_type = 'order_cleanup' 
+      ORDER BY id DESC 
       LIMIT 5
     `)
 
     const jobs = jobRows as any[]
 
-    // Get current expired orders count
-    const [expiredCountRows] = await db.execute(`
+    const [expiredCountRows] = await db.query(`
       SELECT COUNT(*) as expired_count
       FROM orders 
       WHERE status = 'pending' 
