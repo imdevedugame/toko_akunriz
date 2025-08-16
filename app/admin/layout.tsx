@@ -1,11 +1,10 @@
 "use client"
 
 import type React from "react"
-
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
-import { DashboardSidebar } from "@/components/admin/admin-sidebar"
+import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminHeader } from "@/components/admin/admin-header"
 
 export default function AdminLayout({
@@ -24,8 +23,11 @@ export default function AdminLayout({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-sm text-gray-600">Loading admin panel...</p>
+        </div>
       </div>
     )
   }
@@ -35,16 +37,14 @@ export default function AdminLayout({
   }
 
   return (
-  <div className="min-h-screen bg-gray-50">
-    <AdminHeader />
-    <div className="flex">
-      <div className="w-64 flex-shrink-0">
-        <DashboardSidebar isMobile={false} />
+    <div className="min-h-screen bg-gray-50">
+      <AdminHeader /> 
+      <div className="flex h-[calc(100vh-4rem)]">
+        <AdminSidebar />
+        <main className="flex-1 overflow-auto">
+          <div className="p-4 lg:p-6 max-w-full">{children}</div>
+        </main>
       </div>
-      <main className="flex-1 p-6">{children}</main>
     </div>
-  </div>
-)
-
-  
+  )
 }

@@ -154,7 +154,7 @@ export default function AdminCategoriesPage() {
               Add Category
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle>Create New Category</DialogTitle>
               <DialogDescription>Add a new product category to organize your products.</DialogDescription>
@@ -231,7 +231,7 @@ export default function AdminCategoriesPage() {
 
       {/* Edit Category Modal */}
       <Dialog open={!!editingCategory} onOpenChange={() => setEditingCategory(null)}>
-        <DialogContent>
+        <DialogContent className="bg-white">
           <DialogHeader>
             <DialogTitle>Edit Category</DialogTitle>
             <DialogDescription>Update the category information.</DialogDescription>

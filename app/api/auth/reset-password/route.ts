@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const { html, text } = getPasswordResetSuccessTemplate(tokenData.name)
     await sendEmail({
       to: tokenData.email,
-      subject: "Password Berhasil Direset - Rivazstore",
+      subject: "Password Berhasil Direset - Vyloz Premium Zone",
       html,
       text,
     })

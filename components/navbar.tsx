@@ -24,8 +24,8 @@ export default function Navbar() {
 
   const navigation = [
     { name: "Beranda", href: "/" },
-    { name: "Produk", href: "/products" },
-    { name: "Layanan", href: "/services" },
+    { name: "premium Aplikasi", href: "/products" },
+    { name: "Social Media", href: "/services" },
     { name: "Tutorial", href: "/tutorial" },
     { name: "Tentang", href: "/about" },
     { name: "Kontak", href: "/contact" },
@@ -64,16 +64,16 @@ export default function Navbar() {
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
             <Link href="/" className="flex items-center group">
-                <div className="w-15 h-15 mb-5  rounded-lg overflow-hidden group-hover:opacity-90 transition-all duration-200">
+                <div className="w-15 h-15 mb-1   overflow-hidden group-hover:opacity-90 transition-all duration-200">
                 <img
                   src="/Logo.png"
                   alt="PremiumStore Logo"
-                  className="w-full h-full ms-2 object-cover"
+                  className="w-15 h-14  ml-1 object-cover"
                 />
                 </div>
-              <div className="ml-3 hidden sm:block">
-                <span className="text-xl font-bold text-gray-900">Rivazstore</span>
-                <div className="text-xs text-gray-500">Trusted Digital Services</div>
+              <div className="ml-5 hidden sm:block">
+                <span className="text-xl font-bold text-gray-900">Vyloz Premium Zone</span>
+                <div className="text-xs text-gray-500">Pusat Digital Services</div>
               </div>
             </Link>
           </div>
@@ -228,7 +228,7 @@ export default function Navbar() {
                       <Package className="h-5 w-5 text-white" />
                     </div>
                     <div className="ml-3">
-                      <span className="text-xl font-bold text-gray-900">Rivazstore</span>
+                      <span className="text-xl font-bold text-gray-900">Vyloz Premium Zone</span>
                       <div className="text-xs text-gray-500">Trusted Digital Services</div>
                     </div>
                   </div>

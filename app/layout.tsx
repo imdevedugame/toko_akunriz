@@ -9,9 +9,43 @@ import { AuthProvider } from "@/components/auth-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Rivazstore - Akun Premium & IndoSMM Services",
-  description: "Toko online terpercaya untuk akun premium dan layanan IndoSMM",
-  generator: "v0.dev",
+  title: "Vyloz Premium Zone - Pusat Digital Services | Akun Premium & Layanan Digital Terpercaya",
+  description:
+    "Vyloz Premium Zone adalah pusat layanan digital terpercaya untuk akun premium, layanan IndoSMM, followers, likes, views, dan kebutuhan digital marketing lainnya. Harga murah, proses cepat, dan bergaransi.",
+  keywords: [
+    "Vyloz Premium Zone",
+    "Pusat Digital Services",
+    "akun premium",
+    "layanan digital",
+    "followers",
+    "likes",
+    "views",
+    "social media marketing",
+    "jual akun premium",
+    "beli followers",
+    "digital marketing",
+    "terpercaya",
+    "murah",
+    "cepat",
+    "garansi",
+  ],
+  openGraph: {
+    title: "Vyloz Premium Zone - Pusat Digital Services | Akun Premium & Layanan Digital Terpercaya",
+    description:
+      "Vyloz Premium Zone adalah pusat layanan digital terpercaya untuk akun premium, layanan IndoSMM, followers, likes, views, dan kebutuhan digital marketing lainnya. Harga murah, proses cepat, dan bergaransi.",
+    url: "https://vylozzone.com", // Ganti dengan URL website Anda
+    siteName: "Vyloz Premium Zone",
+    images: [
+      {
+        url: "/Logo.png?height=630&width=1200", // Ganti dengan URL gambar banner Anda
+        width: 1200,
+        height: 630,
+        alt: "Vyloz Premium Zone - Pusat Digital Services",
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  }
 }
 
 export default function RootLayout({
@@ -20,27 +54,52 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="id" className="scroll-smooth">
-      <body className={`${inter.className} overflow-x-hidden`}>
+    <html lang="id">
+      <head>
+        {/* JSON-LD Schema Markup for WebSite */}
+        <meta name="google-site-verification" content="-NrYnWzoFNMGy6TM9zT67jOU-SAjE5Pm0vexWZnO6Sw" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Vyloz Premium Zone - Pusat Digital Services",
+              url: "https://vylozzone.com", // Ganti dengan URL website Anda
+              potentialAction: {
+                "@type": "SearchAction",
+                target: "https://vylozzone.com/products?search={search_term_string}", // Ganti dengan URL pencarian produk Anda
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
+        {/* JSON-LD Schema Markup for Organization */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Vyloz Premium Zone",
+              url: "https://vylozzone.com", // Ganti dengan URL website Anda
+              logo: "/Logo.png?height=60&width=60", // Ganti dengan URL logo Anda
+              sameAs: [
+                "https://www.facebook.com/vylozpremiumzone", // Ganti dengan URL Facebook Anda
+                "https://www.instagram.com/vylozpremiumzone", // Ganti dengan URL Instagram Anda
+                "https://twitter.com/vylozpremiumzone", // Ganti dengan URL Twitter Anda
+              ],
+            }),
+          }}
+        />
+      </head>
+      <body className={inter.className}>
         <AuthProvider>
-          <div className="flex flex-col min-h-screen w-full max-w-full">
-            {/* Fixed Navbar */}
-            <header className="sticky top-0 z-50 w-full">
-              <Navbar />
-            </header>
-
-            {/* Main Content Area */}
-            <main className="flex-1 w-full max-w-full overflow-x-hidden">
-              <div className="w-full max-w-full">{children}</div>
-            </main>
-
-            {/* Footer */}
-            <footer className="w-full mt-auto">
-              <Footer />
-            </footer>
-          </div>
+          <Navbar />
+          <main className="min-h-screen">{children}</main>
+          <Footer />
         </AuthProvider>
-        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+         <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
       </body>
     </html>
   )

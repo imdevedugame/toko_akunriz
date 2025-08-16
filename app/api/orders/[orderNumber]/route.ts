@@ -2,10 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAuthUser } from "@/lib/auth"
 import db from "@/lib/db"
 
-export async function GET(
-  request: NextRequest, 
-  context: { params: Promise<{ orderNumber: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ orderNumber: string }> }) {
   try {
     const user = await getAuthUser(request)
     if (!user) {
@@ -15,7 +12,7 @@ export async function GET(
     const params = await context.params
     const orderNumber = params.orderNumber
 
-    // Get order details
+  
     const [orderRows] = await db.execute("SELECT * FROM orders WHERE order_number = ? AND user_id = ?", [
       orderNumber,
       user.id,
@@ -30,24 +27,31 @@ export async function GET(
 
     // Get order items based on type
     const orderDetails: any = {}
-if (order.type === "premium_account") {
-  const [premiumItems] = await db.execute(
-    `
-    SELECT opi.*, p.name as product_name
-    FROM order_premium_items opi
-    JOIN premium_products p ON opi.product_id = p.id
-    WHERE opi.order_id = ?
-  `,
-    [order.id],
-  )
 
-  orderDetails.premium_accounts = (premiumItems as any[]).map((item) => ({
-    product_name: item.product_name,
-    account_email: item.account_email,
-    account_password: item.account_password,
-  }))
+    if (order.type === "premium_account") {
+      const [premiumItems] = await db.execute(
+  `
+  SELECT 
+    opi.*, 
+    p.name as product_name,
+    pa.email as account_email,
+    pa.password as account_password,
+    pa.description
+  FROM order_premium_items opi
+  JOIN premium_products p ON opi.product_id = p.id
+  JOIN premium_accounts pa ON opi.account_id = pa.id
+  WHERE opi.order_id = ?
+`,
+  [order.id],
+)
+      orderDetails.premium_accounts = (premiumItems as any[]).map((item) => ({
+        product_name: item.product_name,
+        account_email: item.account_email,
+        account_password: item.account_password,
+        description: item.description,
+      }))
 
-
+      
     } else if (order.type === "indosmm_service") {
       const [indosmmItems] = await db.execute(
         `
