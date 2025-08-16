@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog"
 import {
   CheckCircle,
   Copy,
@@ -15,7 +15,6 @@ import {
   Home,
   Instagram,
   MessageCircle,
-  FileText,
   X,
   AlertTriangle,
 } from "lucide-react"
@@ -95,9 +94,10 @@ export default function PaymentSuccessPage() {
     if (!order?.premium_accounts) return
 
     const content = order.premium_accounts
-     .map((account, index) =>
-    `Product: ${account.product_name}\nEmail: ${account.account_email}\nPassword: ${account.account_password}\nDescription: ${account.account_description || "Tidak ada"}\n\n`
-  )
+      .map(
+        (account, index) =>
+          `Product: ${account.product_name}\nEmail: ${account.account_email}\nPassword: ${account.account_password}\nDescription: ${account.account_description || "Tidak ada"}\n\n`,
+      )
       .join("")
 
     const blob = new Blob([content], { type: "text/plain" })
@@ -244,35 +244,18 @@ export default function PaymentSuccessPage() {
                         </Button>
                       </div>
                     </div>
-                   
-                      <div>
-                        <label className="text-xs sm:text-sm font-medium text-gray-600">Deskripsi</label>
-                       <textarea
-  readOnly
-  className="w-full text-xs sm:text-sm text-gray-700 mt-1 bg-white border rounded p-2 resize-none"
-  rows={3}
-  value={account.account_description || "Tidak ada deskripsi"}
-></textarea>
-
-
-                      </div>
-                   
+                    <div>
+                      <label className="text-xs sm:text-sm font-medium text-gray-600">Deskripsi Akun</label>
+                      <textarea
+                        readOnly
+                        className="w-full text-xs sm:text-sm text-gray-700 mt-1 bg-white border rounded p-2 sm:p-3 resize-none min-h-[80px]"
+                        rows={4}
+                        value={account.account_description || "Tidak ada deskripsi tersedia untuk akun ini."}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
-
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 sm:p-4">
-                <h5 className="font-semibold text-orange-800 mb-2 text-sm sm:text-base">
-                  ⚠️ Penting untuk Diperhatikan:
-                </h5>
-                <ul className="text-xs sm:text-sm text-orange-700 space-y-1">
-                  <li>• Jangan ganti password akun</li>
-                  <li>• Maksimal 1 device bersamaan untuk streaming</li>
-                  <li>• Logout setelah selesai menggunakan</li>
-                  <li>• Simpan informasi ini dengan aman</li>
-                  <li>• Hubungi support jika ada masalah</li>
-                </ul>
-              </div>
             </CardContent>
           </Card>
         )}
@@ -292,55 +275,33 @@ export default function PaymentSuccessPage() {
           </Link>
         </div>
       </div>
-<div className="mt-4 text-center">
-  <Button
-    variant="outline"
-    className="w-full sm:w-auto"
-    onClick={() => setShowNetflixPopup(true)}
-  >
-    <AlertTriangle className="h-4 w-4 mr-2 text-yellow-600" />
-    Tampilkan Info Penting Lagi
-  </Button>
-</div>
+      <div className="mt-4 text-center">
+        <Button variant="outline" className="w-full sm:w-auto bg-transparent" onClick={() => setShowNetflixPopup(true)}>
+          <AlertTriangle className="h-4 w-4 mr-2 text-yellow-600" />
+          Tampilkan Info Penting
+        </Button>
+      </div>
       {/* Netflix Private Account Popup */}
       <Dialog open={showNetflixPopup} onOpenChange={setShowNetflixPopup}>
-        <DialogContent className="w-[85vw] max-w-sm mx-auto bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 max-h-[70vh] overflow-y-auto sm:max-w-md sm:max-h-[90vh]">
+        <DialogContent className="w-[90vw] max-w-md mx-auto bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-200 max-h-[80vh] overflow-y-auto sm:max-w-lg sm:max-h-[85vh]">
           <DialogHeader className="text-center">
             <div className="flex items-center justify-center mb-3 sm:mb-4">
-              <div className="bg-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-sm sm:text-lg">
-                Informasi Penting
+              <div className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold text-sm sm:text-lg shadow-lg">
+                Terima Kasih & Info Penting
               </div>
             </div>
-           
           </DialogHeader>
 
-          <div className="space-y-3 sm:space-y-6">
-            {/* Description */}
-            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-2 sm:p-4">
-              <div className="flex items-center mb-2 sm:mb-3">
-                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 mr-2" />
-                <h3 className="font-bold text-yellow-800 text-sm sm:text-base">WAJIB DI BACA !!</h3>
-              </div>
-              <p className="text-xs sm:text-sm text-yellow-700 mb-2 sm:mb-3">
-                Syarat dan Ketentuan dibawah ini wajib ditaati, apabila melanggar maka garansi hangus.
-              </p>
-              <div className="text-center">
-                <p className="text-xs sm:text-sm font-medium text-yellow-800 mb-2">Download dan baca ⬇️</p>
-                <Button variant="outline" size="sm" className="bg-white text-xs sm:text-sm">
-                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                  {"[ File ]"}
-                </Button>
-              </div>
-            </div>
-
+          <div className="space-y-4 sm:space-y-6">
             {/* Thank You Message */}
-            <div className="text-center bg-green-50 border-2 border-green-200 rounded-lg p-2 sm:p-4">
-              <p className="font-semibold text-green-800 mb-2 sm:mb-3 text-sm sm:text-base">
-                Terimakasih telah order di Vyloz Zone!
-              </p>
+            <div className="text-center bg-green-50 border-2 border-green-200 rounded-lg p-3 sm:p-4">
+              <div className="mb-3">
+                <CheckCircle className="h-8 w-8 sm:h-10 sm:w-10 text-green-500 mx-auto mb-2" />
+                <h3 className="font-bold text-green-800 text-base sm:text-lg">Terima Kasih Telah Berbelanja!</h3>
+              </div>
               <p className="text-xs sm:text-sm text-green-700 mb-3 sm:mb-4">
-                Tidak ingin tertinggal informasi terbaru serta seputar Giveaway dan Promo menarik? Follow Instagram
-                @vylozzone
+                Terima kasih telah mempercayai Vyloz Zone untuk kebutuhan akun premium Anda. Jangan lupa follow
+                Instagram kami untuk mendapatkan info promo dan giveaway menarik!
               </p>
 
               {/* Social Media Links */}
@@ -348,46 +309,70 @@ export default function PaymentSuccessPage() {
                 <Link
                   href="https://www.instagram.com/vylozzone?igsh=bzdrNnR6N281eGUz"
                   target="_blank"
-                  className="flex items-center bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all text-xs sm:text-sm"
+                  className="flex items-center bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all text-xs sm:text-sm font-medium shadow-md"
                 >
-                  <Instagram className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                  Follow Instagram
+                  <Instagram className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                  Follow @vylozzone
                 </Link>
               </div>
             </div>
 
-            {/* WhatsApp Contact */}
-            <div className="bg-red-50 border-2 border-red-300 rounded-lg p-2 sm:p-4">
-              <div className="flex items-center mb-2 sm:mb-3">
-                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 mr-2" />
-                <h3 className="font-bold text-red-800 text-sm sm:text-base">WAJIB !!</h3>
+            {/* Screenshot Warning */}
+            <div className="bg-red-50 border-2 border-red-300 rounded-lg p-3 sm:p-4">
+              <div className="flex items-center mb-3 sm:mb-4">
+                <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 mr-2 flex-shrink-0" />
+                <h3 className="font-bold text-red-800 text-sm sm:text-base">WAJIB SCREENSHOT!</h3>
               </div>
-              <p className="text-xs sm:text-sm text-red-700 mb-2 sm:mb-3">
-                Semua pembeli wajib ScreenShot halaman ini lalu kirimkan foto bukti screenshot ke nomor admin dibawah
-                ini :
-              </p>
-              <div className="text-center">
-                <Link
-                  href="https://wa.me/6289630375723"
-                  target="_blank"
-                  className="inline-flex items-center bg-green-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-green-600 transition-all text-xs sm:text-sm"
-                >
-                  <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                  Kirim Screenshot ke Admin
-                </Link>
+              <div className="space-y-3">
+                <p className="text-xs sm:text-sm text-red-700">
+                  <strong>PENTING:</strong> Semua pembeli wajib screenshot halaman ini dan kirimkan ke admin sebagai
+                  bukti pembelian.
+                </p>
+                <div className="bg-yellow-50 border border-yellow-300 rounded p-2 sm:p-3">
+                  <p className="text-xs sm:text-sm text-yellow-800 font-medium">
+                    📸 Screenshot halaman ini sekarang juga!
+                  </p>
+                </div>
+                <div className="text-center">
+                  <Link
+                    href="https://wa.me/6289630375723"
+                    target="_blank"
+                    className="inline-flex items-center bg-green-500 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg hover:bg-green-600 transition-all text-xs sm:text-sm font-medium shadow-md"
+                  >
+                    <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                    Kirim Screenshot ke Admin
+                  </Link>
+                </div>
+                <div className="bg-red-100 border border-red-300 rounded p-2 sm:p-3 text-center">
+                  <p className="text-xs sm:text-sm font-bold text-red-700">
+                    ⚠️ JIKA TIDAK MENGIRIM SCREENSHOT, GARANSI AKUN AKAN HANGUS!
+                  </p>
+                </div>
               </div>
-              <p className="text-xs font-bold mt-2 sm:mt-3 text-center text-red-600">
-                JIKA PEMBELI TIDAK MENGIRIM MAKA GARANSI HANGUS.
-              </p>
+            </div>
+
+            {/* Important Rules */}
+            <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-3 sm:p-4">
+              <div className="flex items-center mb-3">
+                <AlertTriangle className="h-5 w-5 text-orange-600 mr-2" />
+                <h3 className="font-bold text-orange-800 text-sm sm:text-base">Aturan Penggunaan</h3>
+              </div>
+              <ul className="text-xs sm:text-sm text-orange-700 space-y-1 sm:space-y-2">
+                <li>• Jangan mengganti password akun</li>
+                <li>• Maksimal 1 device bersamaan untuk streaming</li>
+                <li>• Logout setelah selesai menggunakan</li>
+                <li>• Simpan informasi akun dengan aman</li>
+                <li>• Hubungi support jika ada masalah</li>
+              </ul>
             </div>
 
             {/* Close Button */}
-            <div className="text-center">
+            <div className="text-center pt-2">
               <Button
                 onClick={() => setShowNetflixPopup(false)}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 sm:px-6 sm:py-2 text-sm sm:text-base"
+                className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-6 py-2 sm:px-8 sm:py-3 text-sm sm:text-base font-medium shadow-lg"
               >
-                <X className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                <X className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                 Tutup
               </Button>
             </div>
